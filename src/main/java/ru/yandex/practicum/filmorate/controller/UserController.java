@@ -1,6 +1,8 @@
 package ru.yandex.practicum.filmorate.controller;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
@@ -12,6 +14,8 @@ import ru.yandex.practicum.filmorate.model.User;
 
 @RestController
 @RequestMapping("/users")
+@Validated
+@Slf4j
 public class UserController {
 
     private final Map<Long, User> users = new HashMap<>();
@@ -21,6 +25,7 @@ public class UserController {
     public ResponseEntity<User> createUser(@Valid @RequestBody User user) {
         user.setId(currentId++);
         users.put(user.getId(), user);
+        log.info("Создан новый пользователь: {}", user);
         return ResponseEntity.ok(user);
     }
 
@@ -29,8 +34,10 @@ public class UserController {
         if (users.containsKey(id)) {
             updatedUser.setId(id);
             users.put(id, updatedUser);
+            log.info("Обновлен пользователь с id {}: {}", id, updatedUser);
             return ResponseEntity.ok(updatedUser);
         }
+        log.warn("Попытка обновления несуществующего пользователя с id {}", id);
         return ResponseEntity.notFound().build();
     }
 
