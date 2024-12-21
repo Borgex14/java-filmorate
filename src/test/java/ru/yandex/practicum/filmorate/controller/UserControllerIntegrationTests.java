@@ -20,7 +20,6 @@ public class UserControllerIntegrationTests {
 
     @BeforeEach
     public void setUp() {
-
     }
 
     @Test
