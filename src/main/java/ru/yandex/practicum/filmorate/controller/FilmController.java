@@ -1,8 +1,10 @@
 package ru.yandex.practicum.filmorate.controller;
 
 import org.springframework.http.ResponseEntity;
+
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.validation.Valid;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -17,14 +19,14 @@ public class FilmController {
     private long currentId = 1;
 
     @PostMapping
-    public ResponseEntity<Film> addFilm(@RequestBody Film film) {
+    public ResponseEntity<Film> addFilm(@Valid @RequestBody Film film) {
         film.setId(currentId++);
         films.put(film.getId(), film);
         return ResponseEntity.ok(film);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Film> updateFilm(@PathVariable Long id, @RequestBody Film updatedFilm) {
+    public ResponseEntity<Film> updateFilm(@PathVariable Long id, @Valid @RequestBody Film updatedFilm) {
         if (films.containsKey(id)) {
             updatedFilm.setId(id);
             films.put(id, updatedFilm);
