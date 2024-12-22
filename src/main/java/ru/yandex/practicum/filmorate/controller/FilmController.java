@@ -29,10 +29,10 @@ public class FilmController {
         return ResponseEntity.ok(film);
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<Film> updateFilm(@PathVariable Long id, @Valid @RequestBody Film updatedFilm) {
+    @PutMapping
+    public ResponseEntity<Film> updateFilm(@Valid @RequestBody Film updatedFilm) {
+        Long id = updatedFilm.getId();
         if (films.containsKey(id)) {
-            updatedFilm.setId(id);
             films.put(id, updatedFilm);
             log.info("Обновлен фильм с id {}: {}", id, updatedFilm);
             return ResponseEntity.ok(updatedFilm);

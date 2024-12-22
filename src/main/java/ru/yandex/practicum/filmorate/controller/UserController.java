@@ -30,9 +30,9 @@ public class UserController {
     }
 
     @PutMapping
-    public ResponseEntity<User> updateUser(@PathVariable Long id,@Valid @RequestBody User updatedUser) {
+    public ResponseEntity<User> updateUser(@Valid @RequestBody User updatedUser) {
+        Long id = updatedUser.getId();
         if (users.containsKey(id)) {
-            updatedUser.setId(id);
             users.put(id, updatedUser);
             log.info("Обновлен пользователь с id {}: {}", id, updatedUser);
             return ResponseEntity.ok(updatedUser);
