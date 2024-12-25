@@ -1,5 +1,6 @@
 package ru.yandex.practicum.filmorate.model;
 
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import jakarta.validation.constraints.Positive;
@@ -10,7 +11,7 @@ import lombok.Data;
 @Data
 public class Film {
     private Long id;
-
+    @NotBlank
     @NotNull(message = "Название не может быть пустым")
     private String name;
 
