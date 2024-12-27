@@ -22,7 +22,7 @@ public class FilmValidationTests {
         Film film = new Film();
         film.setName("Valid Film Name");
         film.setReleaseDate(LocalDate.of(2000, 1, 1));
-
+        film.setDuration(120);
         Set<ConstraintViolation<Film>> violations = validator.validate(film);
 
         assertThat(violations).isEmpty();
