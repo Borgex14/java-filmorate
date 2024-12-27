@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 
 @Slf4j
@@ -26,12 +27,9 @@ public class FilmController {
 
     @PostMapping
     public ResponseEntity<?> addFilm(@Valid @RequestBody Film film) {
-        if (film == null) {
-            return ResponseEntity.badRequest().body(null);
-        }
-        if (film.getReleaseDate().isBefore(LocalDate.of(1895,12,28))) {
-            log.error("Добавлена дата выхода раньше 28.12.1895");
-            return ResponseEntity.badRequest().body(Collections.singletonMap("error", "Дата не раньше 28.12.1895"));
+        ResponseEntity<?> validationResponse = validateFilm(film);
+        if (validationResponse != null) {
+            return validationResponse;
         }
         film.setId(currentId++);
         films.put(film.getId(), film);
@@ -58,6 +56,26 @@ public class FilmController {
 
     @GetMapping
     public ResponseEntity<List<Film>> getAllFilms() {
-        return ResponseEntity.ok(films.values().stream().collect(Collectors.toList()));
+        log.info("Запрос на получение всех фильмов");
+        List<Film> filmList = films.values().stream().collect(Collectors.toList());
+        log.info("Количество фильмов возвращаемых в ответе: {}", filmList.size());
+        return ResponseEntity.ok(filmList);
+    }
+
+    private ResponseEntity<?> validateFilm(Film film) {
+        if (film == null) {
+            return ResponseEntity.badRequest().body(Collections.singletonMap("error", "Film object is null"));
+        }
+        if (film.getReleaseDate().isBefore(LocalDate.of(1895, 12, 28))) {
+            log.error("Добавлена дата выхода раньше 28.12.1895");
+            return ResponseEntity.badRequest().body(Collections.singletonMap("error", "Дата не раньше 28.12.1895"));
+        }
+        if (film.getName().isBlank())  {
+            throw new ValidationException("Название не может быть пустым");
+        }
+        if (film.getDescription() == null || film.getDescription().length() > 200) {
+            throw new ValidationException("Максимальная длина - 200 символов");
+        }
+        return null;
     }
 }

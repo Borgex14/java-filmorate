@@ -17,10 +17,10 @@ public class Film {
 
     @Size(max = 200, message = "Максимальная длина описания — 200 символов")
     private String description;
-
+    @NotNull
     @Past(message = "Дата релиза должна быть не раньше 28 декабря 1895 года")
     private LocalDate releaseDate;
-
+    @NotNull
     @Positive(message = "Продолжительность должна быть положительным числом")
     private Integer duration;
 }

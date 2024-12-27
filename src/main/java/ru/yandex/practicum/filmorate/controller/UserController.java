@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 
 @RestController
@@ -25,13 +26,11 @@ public class UserController {
 
     @PostMapping
     public ResponseEntity<User> createUser(@Valid @RequestBody User user) {
-        if (user == null) {
-            return ResponseEntity.badRequest().body(null);
+        ResponseEntity<User> validationResponse = validateUser(user);
+        if (validationResponse != null) {
+            return validationResponse;
         }
         user.setId(currentId++);
-        if (user.getName() == null || user.getName().isEmpty()) {
-            user.setName("common");
-        }
         users.put(user.getId(), user);
         log.info("Создан новый пользователь: {}", user);
         return ResponseEntity.ok(user);
@@ -56,6 +55,24 @@ public class UserController {
 
     @GetMapping
     public ResponseEntity<List<User>> getAllUsers() {
-        return ResponseEntity.ok(users.values().stream().collect(Collectors.toList()));
+        log.info("Запрошены все пользователи. Количество пользователей: {}", users.size());
+        List<User> userList = users.values().stream().collect(Collectors.toList());
+        return ResponseEntity.ok(userList);
+    }
+
+    private ResponseEntity<User> validateUser(User user) {
+        if (user == null) {
+            return ResponseEntity.badRequest().body(null);
+        }
+        if (user.getEmail().isEmpty()) {
+            throw new ValidationException("Необходимо добавить корректную электронную почту");
+        }
+        if (user.getLogin().isBlank() || user.getLogin().isEmpty() || user.getLogin().contains(" ")) {
+            throw new ValidationException("Некорректный логин добавлен");
+        }
+        if (user.getName() == null || user.getName().isEmpty()) {
+            user.setName(user.getLogin());
+        }
+        return null;
     }
 }
