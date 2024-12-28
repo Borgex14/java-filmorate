@@ -27,10 +27,7 @@ public class FilmController {
 
     @PostMapping
     public ResponseEntity<?> addFilm(@Valid @RequestBody Film film) {
-        ResponseEntity<?> validationResponse = validateFilm(film);
-        if (validationResponse != null) {
-            return validationResponse;
-        }
+        validateFilm(film);
         film.setId(currentId++);
         films.put(film.getId(), film);
         log.info("Добавлен новый фильм: {}", film);
@@ -42,6 +39,12 @@ public class FilmController {
         if (updatedFilm  == null) {
             log.warn("Пустые данные добавлены");
             return ResponseEntity.badRequest().body(Collections.singletonMap("error", "Название не может быть пустым."));
+        }
+        try {
+            validateFilm(updatedFilm);
+        } catch (ValidationException e) {
+            log.warn("Ошибка валидации: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(Collections.singletonMap("error", e.getMessage()));
         }
         Long id = updatedFilm.getId();
         if (films.containsKey(id)) {
@@ -62,20 +65,13 @@ public class FilmController {
         return ResponseEntity.ok(filmList);
     }
 
-    private ResponseEntity<?> validateFilm(Film film) {
+    private void validateFilm(Film film) {
         if (film == null) {
-            return ResponseEntity.badRequest().body(Collections.singletonMap("error", "Film object is null"));
+            throw new ValidationException("Film object is null");
         }
         if (film.getReleaseDate().isBefore(LocalDate.of(1895, 12, 28))) {
             log.error("Добавлена дата выхода раньше 28.12.1895");
-            return ResponseEntity.badRequest().body(Collections.singletonMap("error", "Дата не раньше 28.12.1895"));
+            throw new ValidationException("Дата не раньше 28.12.1895");
         }
-        if (film.getName().isBlank())  {
-            throw new ValidationException("Название не может быть пустым");
-        }
-        if (film.getDescription() == null || film.getDescription().length() > 200) {
-            throw new ValidationException("Максимальная длина - 200 символов");
-        }
-        return null;
     }
 }

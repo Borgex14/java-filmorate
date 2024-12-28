@@ -26,10 +26,7 @@ public class UserController {
 
     @PostMapping
     public ResponseEntity<User> createUser(@Valid @RequestBody User user) {
-        ResponseEntity<User> validationResponse = validateUser(user);
-        if (validationResponse != null) {
-            return validationResponse;
-        }
+        validateUser(user);
         user.setId(currentId++);
         users.put(user.getId(), user);
         log.info("Создан новый пользователь: {}", user);
@@ -41,6 +38,12 @@ public class UserController {
         if (updatedUser  == null) {
             log.warn("Пустые данные добавлены");
             return ResponseEntity.badRequest().body(Collections.singletonMap("error", "Данные пользователя не могут быть пустыми."));
+        }
+        try {
+            validateUser(updatedUser);
+        } catch (ValidationException e) {
+            log.warn("Ошибка валидации: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(Collections.singletonMap("error", e.getMessage()));
         }
         Long id = updatedUser.getId();
         if (users.containsKey(id)) {
@@ -60,19 +63,15 @@ public class UserController {
         return ResponseEntity.ok(userList);
     }
 
-    private ResponseEntity<User> validateUser(User user) {
+    private void validateUser(User user) {
         if (user == null) {
-            return ResponseEntity.badRequest().body(null);
+            throw new ValidationException("Пользователь не может быть нулевым");
         }
-        if (user.getEmail().isEmpty()) {
-            throw new ValidationException("Необходимо добавить корректную электронную почту");
-        }
-        if (user.getLogin().isBlank() || user.getLogin().isEmpty() || user.getLogin().contains(" ")) {
+        if (user.getLogin() == null || user.getLogin().isBlank() || user.getLogin().contains(" ")) {
             throw new ValidationException("Некорректный логин добавлен");
         }
         if (user.getName() == null || user.getName().isEmpty()) {
             user.setName(user.getLogin());
         }
-        return null;
     }
 }
