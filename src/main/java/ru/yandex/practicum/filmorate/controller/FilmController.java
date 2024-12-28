@@ -27,7 +27,12 @@ public class FilmController {
 
     @PostMapping
     public ResponseEntity<?> addFilm(@Valid @RequestBody Film film) {
-        validateFilm(film);
+        try {
+            validateFilm(film);
+        } catch (ValidationException e) {
+            log.warn("Ошибка валидации: {}", e.getMessage());
+            throw e;
+        }
         film.setId(currentId++);
         films.put(film.getId(), film);
         log.info("Добавлен новый фильм: {}", film);
@@ -71,7 +76,7 @@ public class FilmController {
         }
         if (film.getReleaseDate().isBefore(LocalDate.of(1895, 12, 28))) {
             log.error("Добавлена дата выхода раньше 28.12.1895");
-            throw new ValidationException("Дата не раньше 28.12.1895");
+            throw new ValidationException("Дата не может быть раньше 28.12.1895");
         }
     }
 }
