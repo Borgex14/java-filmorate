@@ -35,16 +35,7 @@ public class UserController {
 
     @PutMapping
     public ResponseEntity<?> updateUser(@Valid @RequestBody User updatedUser) {
-        if (updatedUser  == null) {
-            log.warn("Пустые данные добавлены");
-            return ResponseEntity.badRequest().body(Collections.singletonMap("error", "Данные пользователя не могут быть пустыми."));
-        }
-        try {
-            validateUser(updatedUser);
-        } catch (ValidationException e) {
-            log.warn("Ошибка валидации: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(Collections.singletonMap("error", e.getMessage()));
-        }
+        validateUser(updatedUser);
         Long id = updatedUser.getId();
         if (users.containsKey(id)) {
             users.put(id, updatedUser);

@@ -27,12 +27,7 @@ public class FilmController {
 
     @PostMapping
     public ResponseEntity<?> addFilm(@Valid @RequestBody Film film) {
-        try {
-            validateFilm(film);
-        } catch (ValidationException e) {
-            log.warn("Ошибка валидации: {}", e.getMessage());
-            throw e;
-        }
+        validateFilm(film);
         film.setId(currentId++);
         films.put(film.getId(), film);
         log.info("Добавлен новый фильм: {}", film);
@@ -41,16 +36,7 @@ public class FilmController {
 
     @PutMapping
     public ResponseEntity<?> updateFilm(@Valid @RequestBody Film updatedFilm) {
-        if (updatedFilm  == null) {
-            log.warn("Пустые данные добавлены");
-            return ResponseEntity.badRequest().body(Collections.singletonMap("error", "Название не может быть пустым."));
-        }
-        try {
-            validateFilm(updatedFilm);
-        } catch (ValidationException e) {
-            log.warn("Ошибка валидации: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(Collections.singletonMap("error", e.getMessage()));
-        }
+        validateFilm(updatedFilm);
         Long id = updatedFilm.getId();
         if (films.containsKey(id)) {
             films.put(id, updatedFilm);
