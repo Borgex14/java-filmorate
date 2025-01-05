@@ -35,14 +35,17 @@ public class GlobalExceptionHandler {
         errorResponse.put("error", e.getMessage());
         return ResponseEntity.badRequest().body(errorResponse);
     }
-
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<String> handleOtherExceptions(Exception e) {
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Произошла ошибка: " + e.getMessage());
+    public ResponseEntity<Map<String, String>> handleOtherExceptions(Exception e) {
+        Map<String, String> errorResponse = new HashMap<>();
+        errorResponse.put("error", e.getMessage());
+        return ResponseEntity.internalServerError().body(errorResponse);
     }
-
     @ExceptionHandler(NotFoundException.class)
-    public ResponseEntity<String> handleResourceNotFoundException(NotFoundException e) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+    public ResponseEntity<Map<String, String>> handleResourceNotFoundException(NotFoundException e) {
+        Map<String, String> errorResponse = new HashMap<>();
+        errorResponse.put("error", e.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
     }
 }

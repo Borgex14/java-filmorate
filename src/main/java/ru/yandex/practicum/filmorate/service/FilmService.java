@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.storage.FilmStorage;
 
@@ -32,6 +31,7 @@ public class FilmService {
                 log.warn("Пользователь с id {} уже поставил лайк фильму с id {}", userId, filmId);
             }
         } else {
+            log.error("Не удалось поставить лайк, фильм с id {} не найден в хранилище", filmId);
             throw new NotFoundException("Фильм с id " + filmId + " не найден.");
         }
     }
@@ -51,6 +51,10 @@ public class FilmService {
     }
 
     public List<Film> getTopFilms(int count) {
+        if (count < 0) {
+            throw new IllegalArgumentException("Count must be non-negative");
+        }
+
         return filmLikes.entrySet().stream()
                 .sorted((entry1, entry2) -> Integer.compare(entry2.getValue().size(), entry1.getValue().size()))
                 .limit(count)
