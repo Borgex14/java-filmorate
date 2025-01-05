@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.storage.FilmStorage;
@@ -31,14 +32,21 @@ public class FilmService {
                 log.warn("Пользователь с id {} уже поставил лайк фильму с id {}", userId, filmId);
             }
         } else {
-            throw new ValidationException("Фильм не найден");
+            throw new NotFoundException("Фильм с id " + filmId + " не найден.");
         }
     }
 
     public void removeLike(long filmId, long userId) {
-        Set<Long> likes = filmLikes.get(filmId);
-        if (likes != null && likes.remove(userId)) {
-            log.info("Пользователь с id {} убрал лайк у фильма с id {}", userId, filmId);
+        Film film = filmStorage.getFilm(filmId);
+        if (film != null) {
+            Set<Long> likes = filmLikes.get(filmId);
+            if (likes != null && likes.remove(userId)) {
+                log.info("Пользователь с id {} убрал лайк у фильма с id {}", userId, filmId);
+            } else {
+                log.warn("У пользователя с id {} нет лайка у фильма с id {}", userId, filmId);
+            }
+        } else {
+            throw new NotFoundException("Фильм с id " + filmId + " не найден.");
         }
     }
 

@@ -87,7 +87,7 @@ public class FilmController {
         filmService.removeLike(userId, id);
     }
 
-    @GetMapping("/popular")
+    @GetMapping("/popular?count={count}")
     public List<Film> getTopFilms(@RequestParam (required = false) Optional<Integer> count) {
         if (count.isPresent()) {
             return filmService.getTopFilms(count.get());
