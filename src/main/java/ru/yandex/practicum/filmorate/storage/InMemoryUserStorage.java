@@ -1,7 +1,10 @@
 package ru.yandex.practicum.filmorate.storage;
 
+import java.util.ArrayList;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 
@@ -48,6 +51,26 @@ public class InMemoryUserStorage implements UserStorage {
     @Override
     public void deleteUser(long id) {
         users.remove(id);
+    }
+
+    @Override
+    public Optional<List<User>> getFriends(Long id) {
+        List<User> result = new ArrayList<>();
+        if(users.isEmpty()) {
+            log.error("Ошибка при получении списка юзеров");
+            return Optional.empty();
+        }
+        if (!users.containsKey(id)) {
+            throw new NotFoundException("User c id = " + id + " не найден");
+        }
+        if (users.containsKey(id) && !users.get(id).getFriends().isEmpty()) {
+            for (Long userFriendId : users.get(id).getFriends()) {
+                result.add(users.get(userFriendId));
+            }
+            return Optional.of(result);
+        }
+        log.error("Ошибка при получении списка юзеров");
+        return Optional.empty();
     }
 
     private void validateUser(User user) {
