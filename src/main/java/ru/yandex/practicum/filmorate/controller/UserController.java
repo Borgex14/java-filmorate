@@ -23,6 +23,7 @@ import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 public class UserController {
     private final UserService userService;
     private final UserStorage userStorage;
+    
     @Autowired
     public UserController(UserStorage userStorage, UserService userService) {
         this.userStorage = userStorage;
