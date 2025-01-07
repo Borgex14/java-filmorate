@@ -1,64 +1,67 @@
 package ru.yandex.practicum.filmorate.service;
 
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.storage.FilmStorage;
+import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 
 import java.util.*;
+import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 @Service
+@RequiredArgsConstructor
 @Slf4j
 public class FilmService {
     private final FilmStorage filmStorage;
-    private final Map<Long, Set<Long>> filmLikes = new HashMap<>();
-    @Autowired
-    public FilmService(FilmStorage filmStorage) {
-        this.filmStorage = filmStorage;
+    private final UserStorage userStorage;
+
+    public Film addFilm (Film film) {
+        return filmStorage.addFilm(film);
     }
 
     public void addLike(long filmId, long userId) {
+        userStorage.getUser(userId);
         Film film = filmStorage.getFilm(filmId);
-        if (film != null) {
-            filmLikes.putIfAbsent(filmId, new HashSet<>());
-            if (filmLikes.get(filmId).add(userId)) {
-                log.info("Пользователь с id {} поставил лайк фильму с id {}", userId, filmId);
-            } else {
+        if (film.getLikes().add(userId)) {
+            log.info("Пользователь с id {} поставил лайк фильму с id {}", userId, filmId);
+        } else {
                 log.warn("Пользователь с id {} уже поставил лайк фильму с id {}", userId, filmId);
             }
-        } else {
-            log.error("Не удалось поставить лайк, фильм с id {} не найден в хранилище", filmId);
-            throw new NotFoundException("Фильм с id " + filmId + " не найден.");
-        }
     }
 
     public void removeLike(long filmId, long userId) {
-        Film film = filmStorage.getFilm(filmId);
-        if (film != null) {
-            Set<Long> likes = filmLikes.get(filmId);
-            if (likes != null && likes.remove(userId)) {
-                log.info("Пользователь с id {} убрал лайк у фильма с id {}", userId, filmId);
-            } else {
-                log.warn("У пользователя с id {} нет лайка у фильма с id {}", userId, filmId);
-            }
+        userStorage.getUser(userId);
+        if (filmStorage.getFilm(filmId).deleteLike(userId)) {
+            log.info("Пользователь с id {} убрал лайк у фильма с id {}", userId, filmId);
         } else {
-            throw new NotFoundException("Фильм с id " + filmId + " не найден.");
+            log.warn("У пользователя с id {} нет лайка у фильма с id {}", userId, filmId);
         }
     }
 
-    public List<Film> getTopFilms(int count) {
-        if (count < 0) {
-            throw new IllegalArgumentException("Count must be non-negative");
-        }
+    public void deleteFilmById(long id) {
+        filmStorage.deleteFilm(id);
+    }
 
-        return filmLikes.entrySet().stream()
-                .sorted((entry1, entry2) -> Integer.compare(entry2.getValue().size(), entry1.getValue().size()))
+    public Film getFilmById(long id) {
+        return filmStorage.getFilm(id);
+    }
+
+    public Collection<Film> getAllFilms() {
+        return filmStorage.getAllFilms();
+    }
+
+    public Film updateFilm (Film film) {
+        return filmStorage.updateFilm(film);
+    }
+
+    public List<Film> getTopFilms(Integer count) {
+        return filmStorage.getAllFilms().stream()
+                .sorted((entry1, entry2) -> Long.compare(entry2.getLikes().size(), entry1.getLikes().size()))
                 .limit(count)
-                .map(entry -> filmStorage.getFilm(entry.getKey()))
                 .collect(Collectors.toList());
     }
 }

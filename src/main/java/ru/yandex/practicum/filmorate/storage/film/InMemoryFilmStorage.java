@@ -1,15 +1,16 @@
-package ru.yandex.practicum.filmorate.storage;
+package ru.yandex.practicum.filmorate.storage.film;
 
+import java.util.List;
 import org.springframework.stereotype.Component;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDate;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+
 
 @Component
 @Slf4j
@@ -19,8 +20,8 @@ public class InMemoryFilmStorage implements FilmStorage {
 
     @Override
     public Film addFilm(Film film) {
-        validateFilm(film);
         film.setId(currentId++);
+        validateFilm(film);
         films.put(film.getId(), film);
         return film;
     }
@@ -33,21 +34,21 @@ public class InMemoryFilmStorage implements FilmStorage {
             films.put(id, updatedFilm);
             return updatedFilm;
         }
-        throw new ValidationException("Фильм с id " + id + " не найден.");
+        throw new NotFoundException("Фильм с id " + id + " не найден.");
     }
 
     @Override
-    public Film getFilm(long id) {
-        Film film = films.get(id);
-        if (film == null) {
-            log.warn("Фильм с ID {} не найден в хранилище", id);
+    public Film getFilm(long filmId) {
+        if (!films.containsKey(filmId)) {
+            log.error("фильм с id {} не найден", filmId);
+            throw new NotFoundException("Фильм с id " + filmId + " не найден");
         }
-        return film;
+        return films.get(filmId);
     }
 
     @Override
     public List<Film> getAllFilms() {
-        return films.values().stream().collect(Collectors.toList());
+        return films.values().stream().toList();
     }
 
     @Override

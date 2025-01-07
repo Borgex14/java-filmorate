@@ -1,4 +1,4 @@
-package ru.yandex.practicum.filmorate.storage;
+package ru.yandex.practicum.filmorate.storage.user;
 
 import java.util.ArrayList;
 import java.util.Optional;
@@ -39,8 +39,12 @@ public class InMemoryUserStorage implements UserStorage {
     }
 
     @Override
-    public User getUser(long id) {
-        return users.get(id);
+    public User getUser(long userId) {
+        if (!users.containsKey(userId)) {
+        log.error("Пользователь с id {} не найден", userId);
+        throw new NotFoundException("Пользователь с id " + userId + " не найден.");
+    }
+        return users.get(userId);
     }
 
     @Override
