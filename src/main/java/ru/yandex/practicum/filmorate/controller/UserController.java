@@ -23,7 +23,7 @@ import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 public class UserController {
     private final UserService userService;
     private final UserStorage userStorage;
-    
+
     @Autowired
     public UserController(UserStorage userStorage, UserService userService) {
         this.userStorage = userStorage;
@@ -90,7 +90,7 @@ public class UserController {
 
     @ResponseStatus(HttpStatus.OK)
     @GetMapping("/{id}/friends")
-    public List<User> getFriends (@PathVariable Long id) {
+    public List<User> getFriends(@PathVariable Long id) {
         Optional<List<User>> friendsList = userStorage.getFriends(id);
         return friendsList.orElse(Collections.emptyList());
     }
