@@ -5,7 +5,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 
@@ -29,8 +28,8 @@ public class FilmService {
         if (film.getLikes().add(userId)) {
             log.info("Пользователь с id {} поставил лайк фильму с id {}", userId, filmId);
         } else {
-                log.warn("Пользователь с id {} уже поставил лайк фильму с id {}", userId, filmId);
-            }
+            log.warn("Пользователь с id {} уже поставил лайк фильму с id {}", userId, filmId);
+        }
     }
 
     public void removeLike(long filmId, long userId) {

@@ -19,7 +19,6 @@ public class User {
     @NotNull(message = "Электронная почта не может быть пустой")
     @Email(message = "Электронная почта должна содержать символ @")
     private String email;
-
     @NotNull(message = "Логин не может быть пустым")
     @Size(min = 1, message = "Логин не может содержать пробелы")
     private String login;
