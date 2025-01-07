@@ -60,7 +60,7 @@ public class InMemoryUserStorage implements UserStorage {
     @Override
     public Optional<List<User>> getFriends(Long id) {
         List<User> result = new ArrayList<>();
-        if(users.isEmpty()) {
+        if (users.isEmpty()) {
             log.error("Ошибка при получении списка юзеров");
             return Optional.empty();
         }
