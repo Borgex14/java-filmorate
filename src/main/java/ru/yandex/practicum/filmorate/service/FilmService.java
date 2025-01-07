@@ -18,7 +18,7 @@ public class FilmService {
     private final FilmStorage filmStorage;
     private final UserStorage userStorage;
 
-    public Film addFilm (Film film) {
+    public Film addFilm(Film film) {
         return filmStorage.addFilm(film);
     }
 
@@ -53,7 +53,7 @@ public class FilmService {
         return filmStorage.getAllFilms();
     }
 
-    public Film updateFilm (Film film) {
+    public Film updateFilm(Film film) {
         return filmStorage.updateFilm(film);
     }
 
