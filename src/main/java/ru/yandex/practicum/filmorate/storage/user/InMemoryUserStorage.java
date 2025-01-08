@@ -67,7 +67,7 @@ public class InMemoryUserStorage implements UserStorage {
         if (!users.containsKey(id)) {
             throw new NotFoundException("User c id = " + id + " не найден");
         }
-        if (users.containsKey(id) && !users.get(id).getFriends().isEmpty()) {
+        if (!users.get(id).getFriends().isEmpty()) {
             for (Long userFriendId : users.get(id).getFriends()) {
                 result.add(users.get(userFriendId));
             }

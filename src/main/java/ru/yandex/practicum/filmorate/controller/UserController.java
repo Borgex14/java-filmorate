@@ -22,17 +22,15 @@ import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 @Slf4j
 public class UserController {
     private final UserService userService;
-    private final UserStorage userStorage;
 
     @Autowired
     public UserController(UserStorage userStorage, UserService userService) {
-        this.userStorage = userStorage;
         this.userService = userService;
     }
 
     @PostMapping
-    public ResponseEntity<User> createUser(@Valid @RequestBody User user) {
-        User createdUser = userStorage.createUser(user);
+    public ResponseEntity<User> addUser(@Valid @RequestBody User user) {
+        User createdUser = userService.createUser(user);
         log.info("Создан новый пользователь: {}", createdUser);
         return ResponseEntity.ok(createdUser);
     }
@@ -40,7 +38,7 @@ public class UserController {
     @PutMapping
     public ResponseEntity<?> updateUser(@Valid @RequestBody User updatedUser) {
         try {
-            User user = userStorage.updateUser(updatedUser);
+            User user = userService.updateUser(updatedUser);
             log.info("Обновлен пользователь с id {}: {}", user.getId(), user);
             return ResponseEntity.ok(user);
         } catch (ValidationException e) {
@@ -52,14 +50,14 @@ public class UserController {
 
     @GetMapping
     public ResponseEntity<List<User>> getAllUsers() {
-        log.info("Запрошены все пользователи. Количество пользователей: {}", userStorage.getAllUsers().size());
-        List<User> userList = userStorage.getAllUsers();
+        log.info("Запрошены все пользователи. Количество пользователей: {}", userService.getAllUsers().size());
+        List<User> userList = userService.getAllUsers();
         return ResponseEntity.ok(userList);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<?> getUserById(@PathVariable long id) {
-        User user = userStorage.getUser(id);
+        User user = userService.getUser(id);
         if (user != null) {
             log.info("Получен пользователь с id {}: {}", id, user);
             return ResponseEntity.ok(user);
@@ -72,7 +70,7 @@ public class UserController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteUser(@PathVariable long id) {
-        userStorage.deleteUser(id);
+        userService.deleteUser(id);
         log.info("Удален пользователь с id {}", id);
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
@@ -91,7 +89,7 @@ public class UserController {
     @ResponseStatus(HttpStatus.OK)
     @GetMapping("/{id}/friends")
     public List<User> getFriends(@PathVariable Long id) {
-        Optional<List<User>> friendsList = userStorage.getFriends(id);
+        Optional<List<User>> friendsList = userService.getFriends(id);
         return friendsList.orElse(Collections.emptyList());
     }
 
