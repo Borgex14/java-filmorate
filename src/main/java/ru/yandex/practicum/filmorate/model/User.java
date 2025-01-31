@@ -7,16 +7,18 @@ import jakarta.validation.constraints.Size;
 import jakarta.validation.constraints.Past;
 
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 import lombok.Data;
 
 @Data
 public class User {
+    private Set<Long> friends = new HashSet<>();
     private Long id;
     @NotBlank
     @NotNull(message = "Электронная почта не может быть пустой")
     @Email(message = "Электронная почта должна содержать символ @")
     private String email;
-
     @NotNull(message = "Логин не может быть пустым")
     @Size(min = 1, message = "Логин не может содержать пробелы")
     private String login;

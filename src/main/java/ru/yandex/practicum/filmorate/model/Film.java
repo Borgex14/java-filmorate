@@ -6,10 +6,14 @@ import jakarta.validation.constraints.Size;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Past;
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 import lombok.Data;
+import ru.yandex.practicum.filmorate.exception.ValidationException;
 
 @Data
 public class Film {
+    Set<Long> likes = new HashSet<>();
     private Long id;
     @NotBlank
     @NotNull(message = "Название не может быть пустым")
@@ -23,4 +27,11 @@ public class Film {
     @NotNull
     @Positive(message = "Продолжительность должна быть положительным числом")
     private Integer duration;
+
+    public boolean deleteLike(long userId) {
+        if (likes.contains(userId)) {
+            likes.remove((Long) userId);
+        } else throw new ValidationException("Нет в фильме лайк");
+        return false;
+    }
 }
