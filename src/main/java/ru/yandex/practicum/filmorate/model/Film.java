@@ -27,6 +27,7 @@ public class Film {
     @NotNull
     @Positive(message = "Продолжительность должна быть положительным числом")
     private Integer duration;
+    private Integer rating_id;
 
     public boolean deleteLike(long userId) {
         if (likes.contains(userId)) {
