@@ -2,10 +2,12 @@ package ru.yandex.practicum.filmorate.storage.film;
 
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.model.Film;
 
+@Primary
 @Repository
 @RequiredArgsConstructor
 public class FilmDbStorage implements FilmStorage {

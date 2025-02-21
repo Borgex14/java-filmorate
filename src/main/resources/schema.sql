@@ -1,7 +1,7 @@
-Table users {
-  user_id integer [primary key]
-  email varchar
-  login varchar
-  name varchar
-  birthday date
-}
+CREATE TABLE IF NOT EXISTS users (
+  user_id INTEGER PRIMARY KEY,
+  email VARCHAR(255),
+  login VARCHAR(255),
+  name VARCHAR(255),
+  birthday DATE
+);

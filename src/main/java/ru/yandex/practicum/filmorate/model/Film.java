@@ -6,12 +6,21 @@ import jakarta.validation.constraints.Size;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Past;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 
+@Builder
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class Film {
     Set<Long> likes = new HashSet<>();
     private Long id;
@@ -27,8 +36,9 @@ public class Film {
     @NotNull
     @Positive(message = "Продолжительность должна быть положительным числом")
     private Integer duration;
-    private Integer rating_id;
-
+    private Mpa mpa;
+    @Builder.Default
+    private List<Genre> genres = new ArrayList<>();
     public boolean deleteLike(long userId) {
         if (likes.contains(userId)) {
             likes.remove((Long) userId);
