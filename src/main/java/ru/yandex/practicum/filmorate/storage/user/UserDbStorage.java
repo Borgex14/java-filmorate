@@ -7,6 +7,7 @@ import java.sql.PreparedStatement;
 import java.sql.Timestamp;
 import java.time.ZoneId;
 import java.time.temporal.ChronoField;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -22,6 +23,7 @@ import ru.yandex.practicum.filmorate.model.User;
 @RequiredArgsConstructor
 public class UserDbStorage implements UserStorage {
     private final JdbcTemplate jdbcTemplate;
+    private final UserRowMapper userRowMapper;
 
     @Override
     public User createUser(User user) {
@@ -43,7 +45,7 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public User updateUser(User user) {
-        checkUserId(user.getId);
+        checkUserId(user.getId());
         String sql = "UPDATE users SET email = ?, login = ?, name = ?, birthday = ? WHERE user_id = ?";
         jdbcTemplate.update(connection -> {
             PreparedStatement stmt = connection.prepareStatement(sql);
@@ -67,7 +69,7 @@ public class UserDbStorage implements UserStorage {
     @Override
     public List<User> getAllUsers() {
         String sql = "SELECT user_id, email, login, name, birthday FROM users";
-        List<User> userList = jdbcTemplate.queryForObject(sql, userRowMapper);
+        List<User> userList = Collections.singletonList(jdbcTemplate.queryForObject(sql, userRowMapper));
         return userList;
     }
 
@@ -94,5 +96,4 @@ public class UserDbStorage implements UserStorage {
             throw new NotFoundException("Пользователь с id " + id + " не найден");
         }
     }
-    
 }
