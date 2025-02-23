@@ -14,4 +14,10 @@ public interface FilmStorage {
     List<Film> getAllFilms();
 
     void deleteFilm(long id);
+
+    void addLike(int filmId, int userId);
+
+    void removeLike(long filmId, long userId);
+
+    List<Film> getTopFilms(String count);
 }

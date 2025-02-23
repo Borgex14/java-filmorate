@@ -60,11 +60,10 @@ public class FilmController {
             return ResponseEntity.ok(film);
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteFilm(@PathVariable long id) {
-        filmService.deleteFilmById(id);
-        log.info("Удален фильм с id {}", id);
-        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    @DeleteMapping("/{filmId}/like/{userId}")
+    public void deleteLike(@PathVariable int filmId, @PathVariable int userId) {
+        log.info("Получен запрос на удаление лайка у фильма с id {} от пользователя с id {}.", filmId, userId);
+        filmService.removeLike(filmId, userId);
     }
 
     @PutMapping("/{id}/like/{userId}")

@@ -56,6 +56,19 @@ public class InMemoryFilmStorage implements FilmStorage {
         films.remove(id);
     }
 
+    @Override
+    public void addLike(int filmId, int userId) {
+    }
+
+    @Override
+    public void removeLike(long filmId, long userId) {
+    }
+
+    @Override
+    public List<Film> getTopFilms(String count) {
+        return List.of();
+    }
+
     private void validateFilm(Film film) {
         if (film == null) {
             throw new ValidationException("Film object is null");
