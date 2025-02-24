@@ -32,15 +32,16 @@ public class FilmDbStorage implements FilmStorage {
     @Override
     public Film addFilm(Film film) {
         checkMpa(film.getMpa());
-        checkGenre(film.getGenres());
+        checkGenre(film.getGenre());
 
-        String sqlQuery = "INSERT INTO films (name, description, release_date, duration, rating_id) " +
-                "VALUES (:name, :description, :releaseDate, :duration, :ratingId)";
+        String sqlQuery = "INSERT INTO films (name, description, release_date, duration, genre, rating_id) " +
+                "VALUES (:name, :description, :releaseDate, :duration, :genre, :ratingId)";
         MapSqlParameterSource parameterSource = new MapSqlParameterSource();
         parameterSource.addValue("name", film.getName());
         parameterSource.addValue("description", film.getDescription());
         parameterSource.addValue("releaseDate", Timestamp.valueOf(film.getReleaseDate().atStartOfDay()));
         parameterSource.addValue("duration", film.getDuration());
+        parameterSource.addValue("genre", film.getGenre());
         parameterSource.addValue("ratingId", film.getMpa().getId());
 
         KeyHolder keyHolder = new GeneratedKeyHolder();
@@ -53,7 +54,7 @@ public class FilmDbStorage implements FilmStorage {
 
         List<Map<String, Object>> genreBatchValues = new ArrayList<>();
 
-        List<Genre> genres = film.getGenres();
+        List<Genre> genres = film.getGenre();
 
         for (Genre genre : genres) {
             Map<String, Object> paramMap = new HashMap<>();
@@ -70,11 +71,11 @@ public class FilmDbStorage implements FilmStorage {
     @Override
     public Film updateFilm(Film film) {
         checkMpa(film.getMpa());
-        checkGenre(film.getGenres());
+        checkGenre(film.getGenre());
         checkId("films", "film_id", film.getId());
 
-        String updateQuery = "UPDATE films SET name = :name, description = :description, release_date = :releaseDate, " +
-                "duration = :duration, rating_id = :mpaId WHERE film_id = :id";
+        String updateQuery = "UPDATE films SET name = :name, description = :description, release_date = :releaseDate, "
+                + "duration = :duration, rating_id = :mpaId WHERE film_id = :id";
 
         MapSqlParameterSource param = new MapSqlParameterSource();
         param.addValue("name", film.getName());
@@ -95,7 +96,7 @@ public class FilmDbStorage implements FilmStorage {
 
         List<Map<String, Object>> genreBatchValues = new ArrayList<>();
 
-        List<Genre> genres = film.getGenres();
+        List<Genre> genres = film.getGenre();
 
         for (Genre genre : genres) {
             Map<String, Object> paramMap = new HashMap<>();
@@ -111,19 +112,21 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public Film getFilm(long id) {
-        String sqlQuery1 = "SELECT f.film_id, f.name, f.description, f.release_date, f.duration, f.rating_id, r.rating_name" +
-                " FROM films AS f INNER JOIN rating AS r ON f.rating_id = r.id WHERE film_id = :id";
+        String sqlQuery1 = "SELECT f.id, f.name, f.description, f.release_date, f.duration, f.genre, f.rating_id, " +
+                "r.rating_name FROM films AS f INNER JOIN rating AS r ON f.rating_id = r.id GROUP BY f.id, f.name, " +
+                "f.description, f.release_date, f.duration, f.rating_id, r.name" +
+                "WHERE id = :id ";
         MapSqlParameterSource param = new MapSqlParameterSource();
         param.addValue("id", id);
 
         Film film = jdbcOperations.queryForObject(sqlQuery1, param, filmRowMapper);
 
-        String sqlQuery2 = "SELECT DISTINCT fl.genre_id, g.genre_name FROM film_genres_list AS fl INNER JOIN genre AS g " +
-                "ON fl.genre_id = g.genre_id WHERE film_id = :id";
+        String sqlQuery2 = "SELECT DISTINCT fl.genre_id, g.name FROM film_genre AS fl INNER JOIN genre AS g " +
+                "ON fl.genre_id = g.id WHERE id = :id";
 
         List<Genre> filmGenres = jdbcOperations.query(sqlQuery2, param, new GenreRowMapper());
 
-        film.setGenres(filmGenres);
+        film.setGenre(filmGenres);
 
         return film;
     }
@@ -131,12 +134,14 @@ public class FilmDbStorage implements FilmStorage {
     @Override
     public List<Film> getAllFilms() {
         String sql = "SELECT * FROM films";
-        String query1 = "SELECT f.film_id, f.name, f.description, f.release_date, f.duration, f.rating_id, r.rating_name" +
-                " FROM films AS f INNER JOIN rating AS r ON f.rating_id = r.rating_id GROUP BY f.film_id";
+        String query1 = "SELECT f.id, f.name, f.description, f.release_date, f.duration, f.rating_id, r.name" +
+                " FROM films AS f INNER JOIN rating AS r ON f.rating_id = r.id GROUP BY f.id, f.name, f.description, " +
+                "f.release_date, f.duration, f.rating_id, r.name";
 
         List<Film> filmsList = jdbcOperations.query(query1,filmRowMapper);
 
-        String query2 = "SELECT DISTINCT f.film_id, f.genre_id, g.genre_name FROM film_genres_list AS f INNER JOIN genres AS g ON f.genre_id = g.genre_id ";
+        String query2 = "SELECT DISTINCT f.id, f.genre_id, g.name FROM film_genre AS f INNER JOIN genre AS g ON " +
+                "f.genre_id = g.id ";
 
         Map<Integer, List<Genre>> resultMap = new LinkedHashMap<>();
 
@@ -144,12 +149,12 @@ public class FilmDbStorage implements FilmStorage {
         jdbcOperations.query(query2, rs -> {
             int genreId = rs.getInt("genre_id");
             int filmId = rs.getInt("film_id");
-            String genreName = rs.getString("genre_name");
+            String genreName = rs.getString("name");
             resultMap.computeIfAbsent(filmId, k -> new ArrayList<>()).add(Genre.builder().id(genreId).name(genreName).build());
         });
 
         for (Film film : filmsList) {
-            film.setGenres(resultMap.get(film.getId()));
+            film.setGenre(resultMap.get(film.getId()));
         }
 
         return filmsList;
@@ -167,7 +172,7 @@ public class FilmDbStorage implements FilmStorage {
         jdbcOperations.update(deleteQuery, param); // Выполняем обновление в базе данных
     }
 
-    public void addLike(int filmId, int userId) {
+    public void addLike(long filmId, long userId) {
         String addLikeQuery = "INSERT INTO likes (film_id, user_id) VALUES (:filmId, :userId)";
         checkId("films", "film_id", filmId);
         checkId("users", "user_id", userId);

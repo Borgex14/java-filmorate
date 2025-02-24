@@ -1,6 +1,5 @@
 package ru.yandex.practicum.filmorate.service;
 
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -23,22 +22,11 @@ public class FilmService {
     }
 
     public void addLike(long filmId, long userId) {
-        userStorage.getUser(userId);
-        Film film = filmStorage.getFilm(filmId);
-        if (film.getLikes().add(userId)) {
-            log.info("Пользователь с id {} поставил лайк фильму с id {}", userId, filmId);
-        } else {
-            log.warn("Пользователь с id {} уже поставил лайк фильму с id {}", userId, filmId);
-        }
+        filmStorage.addLike(filmId, userId);
     }
 
     public void removeLike(long filmId, long userId) {
-        userStorage.getUser(userId);
-        if (filmStorage.getFilm(filmId).deleteLike(userId)) {
-            log.info("Пользователь с id {} убрал лайк у фильма с id {}", userId, filmId);
-        } else {
-            log.warn("У пользователя с id {} нет лайка у фильма с id {}", userId, filmId);
-        }
+        filmStorage.removeLike(filmId, userId);
     }
 
     public Film getFilmById(long id) {
@@ -53,10 +41,7 @@ public class FilmService {
         return filmStorage.updateFilm(film);
     }
 
-    public List<Film> getTopFilms(Integer count) {
-        return filmStorage.getAllFilms().stream()
-                .sorted((entry1, entry2) -> Long.compare(entry2.getLikes().size(), entry1.getLikes().size()))
-                .limit(count)
-                .collect(Collectors.toList());
+    public List<Film> getTopFilms(String count) {
+        return filmStorage.getTopFilms(count);
     }
 }

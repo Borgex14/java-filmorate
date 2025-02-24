@@ -7,22 +7,18 @@ import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Past;
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
 
 @Builder
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class Film {
-    Set<Long> likes = new HashSet<>();
     private Long id;
     @NotBlank
     @NotNull(message = "Название не может быть пустым")
@@ -38,11 +34,5 @@ public class Film {
     private Integer duration;
     private Mpa mpa;
     @Builder.Default
-    private List<Genre> genres = new ArrayList<>();
-    public boolean deleteLike(long userId) {
-        if (likes.contains(userId)) {
-            likes.remove((Long) userId);
-        } else throw new ValidationException("Нет в фильме лайк");
-        return false;
-    }
+    private List<Genre> genre = new ArrayList<>();
 }
