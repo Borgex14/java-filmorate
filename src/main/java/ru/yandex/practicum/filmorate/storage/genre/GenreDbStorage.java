@@ -14,7 +14,7 @@ import java.util.List;
 @Repository
 @Primary
 @RequiredArgsConstructor
-public class GenreDbStorage implements GenreStorage{
+public class GenreDbStorage implements GenreStorage {
 
     private final NamedParameterJdbcOperations jdbcOperations;
     private  final GenreRowMapper genreRowMapper;

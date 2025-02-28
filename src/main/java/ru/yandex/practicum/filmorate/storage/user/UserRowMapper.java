@@ -6,7 +6,6 @@ import ru.yandex.practicum.filmorate.model.User;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.ZoneId;
 
 @Component
 public class UserRowMapper implements RowMapper<User> {
@@ -18,8 +17,6 @@ public class UserRowMapper implements RowMapper<User> {
                 .email(rs.getString(2))
                 .login(rs.getString(3))
                 .name(rs.getString(4))
-                .birthday(rs.getTimestamp(5).toInstant().atZone(ZoneId.systemDefault()).toLocalDate())
-                .build();
-
+                .birthday(rs.getDate(5).toLocalDate()).build();
     }
 }

@@ -20,7 +20,7 @@ import ru.yandex.practicum.filmorate.model.Mpa;
 @AllArgsConstructor
 public class FilmDto {
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
-    private Long id;
+    private long id;
     @NotBlank(message = "Название не может быть пустым")
     private String name;
     @NotNull

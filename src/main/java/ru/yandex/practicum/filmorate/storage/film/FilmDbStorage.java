@@ -35,14 +35,14 @@ public class FilmDbStorage implements FilmStorage {
         checkGenre(film.getGenre());
 
         String sqlQuery = "INSERT INTO films (name, description, release_date, duration, genre, rating_id) " +
-                "VALUES (:name, :description, :releaseDate, :duration, :genre, :ratingId)";
+                "VALUES (:name, :description, :releaseDate, :duration, :genre, :rating_Id)";
         MapSqlParameterSource parameterSource = new MapSqlParameterSource();
         parameterSource.addValue("name", film.getName());
         parameterSource.addValue("description", film.getDescription());
         parameterSource.addValue("releaseDate", Timestamp.valueOf(film.getReleaseDate().atStartOfDay()));
         parameterSource.addValue("duration", film.getDuration());
         parameterSource.addValue("genre", film.getGenre());
-        parameterSource.addValue("ratingId", film.getMpa().getId());
+        parameterSource.addValue("rating_Id", film.getMpa().getId());
 
         KeyHolder keyHolder = new GeneratedKeyHolder();
 
@@ -50,7 +50,7 @@ public class FilmDbStorage implements FilmStorage {
 
         film.setId(keyHolder.getKey().longValue());
 
-        String sqlQuery1 = "INSERT INTO film_genres_list (genre_id, film_id) VALUES (:genreId, :filmId)";
+        String sqlQuery1 = "INSERT INTO film_genre (genre_id, film_id) VALUES (:genreId, :filmId)";
 
         List<Map<String, Object>> genreBatchValues = new ArrayList<>();
 
@@ -72,10 +72,10 @@ public class FilmDbStorage implements FilmStorage {
     public Film updateFilm(Film film) {
         checkMpa(film.getMpa());
         checkGenre(film.getGenre());
-        checkId("films", "film_id", film.getId());
+        checkId("films", "id", film.getId());
 
         String updateQuery = "UPDATE films SET name = :name, description = :description, release_date = :releaseDate, "
-                + "duration = :duration, rating_id = :mpaId WHERE film_id = :id";
+                + "duration = :duration, rating_id = :mpaId WHERE id = :id";
 
         MapSqlParameterSource param = new MapSqlParameterSource();
         param.addValue("name", film.getName());
@@ -88,11 +88,11 @@ public class FilmDbStorage implements FilmStorage {
 
         jdbcOperations.update(updateQuery, param);
 
-        String deleteFilmGenresQuery = "DELETE FROM film_genres_list WHERE film_id = :id";
+        String deleteFilmGenresQuery = "DELETE FROM film_genre WHERE film_id = :id";
 
         jdbcOperations.update(deleteFilmGenresQuery, param);
 
-        String addGenresQuery = "INSERT INTO film_genres_list (film_id, genre_id) VALUES (:filmId, :genreId)";
+        String addGenresQuery = "INSERT INTO film_genre (film_id, genre_id) VALUES (:filmId, :genreId)";
 
         List<Map<String, Object>> genreBatchValues = new ArrayList<>();
 
@@ -147,7 +147,7 @@ public class FilmDbStorage implements FilmStorage {
 
 
         jdbcOperations.query(query2, rs -> {
-            int genreId = rs.getInt("genre_id");
+            long genreId = rs.getLong("genre_id");
             int filmId = rs.getInt("film_id");
             String genreName = rs.getString("name");
             resultMap.computeIfAbsent(filmId, k -> new ArrayList<>()).add(Genre.builder().id(genreId).name(genreName).build());
@@ -188,8 +188,8 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public void removeLike(long filmId, long userId) {
-        checkId("films", "film_id", filmId);
-        checkId("users", "user_id", userId);
+        checkId("films", "id", filmId);
+        checkId("users", "id", userId);
         checkLike(filmId, userId);
 
         String deleteQuery = "DELETE FROM likes WHERE film_id = :filmId AND user_id = :userId";
@@ -244,7 +244,7 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     private void checkMpa(Mpa mpa) {
-        String checkMpaQuery = "SELECT EXISTS (SELECT 1 FROM rating WHERE rating_id = :id)";
+        String checkMpaQuery = "SELECT EXISTS (SELECT 1 FROM rating WHERE id = :id)";
         MapSqlParameterSource param = new MapSqlParameterSource();
         param.addValue("id", mpa.getId());
 
@@ -266,7 +266,7 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     private void checkGenre(List<Genre> genresList) {
-        String checkMpaQuery = "SELECT id FROM genres";
+        String checkMpaQuery = "SELECT id FROM genre";
         List<Integer> genresIdList = jdbcOperations.queryForList(checkMpaQuery, new HashMap<>(), Integer.class);
 
         for (Genre genre : genresList) {
