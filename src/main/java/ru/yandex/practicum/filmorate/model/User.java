@@ -7,6 +7,8 @@ import jakarta.validation.constraints.Size;
 import jakarta.validation.constraints.Past;
 
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -18,7 +20,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class User {
-    public long id;
+    public Long id;
     @NotBlank
     @NotNull(message = "Электронная почта не может быть пустой")
     @Email(message = "Электронная почта должна содержать символ @")
@@ -30,4 +32,6 @@ public class User {
     @NotNull
     @Past(message = "Дата рождения не может быть в будущем")
     private LocalDate birthday;
+
+   // Set<User> friends = new HashSet<>();
 }

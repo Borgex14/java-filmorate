@@ -1,7 +1,6 @@
 package ru.yandex.practicum.filmorate.controller;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -9,12 +8,12 @@ import ru.yandex.practicum.filmorate.mappers.UserMapper;
 
 import jakarta.validation.Valid;
 import java.util.List;
+import java.util.Optional;
 
 import ru.yandex.practicum.filmorate.dto.UserDto;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.service.UserService;
-import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 @RestController
 @RequestMapping("/users")
@@ -23,16 +22,15 @@ import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 public class UserController {
     private final UserService userService;
 
-    @Autowired
-    public UserController(UserStorage userStorage, UserService userService) {
+    public UserController(UserService userService) {
         this.userService = userService;
     }
 
     @PostMapping
     public UserDto postUser(@Valid @RequestBody UserDto userDto) {
-        log.info("Получен запрос на добавление пользователя");
+        log.info("Получен запрос на создание пользователя");
         checkUserLogin(userDto);
-        return UserMapper.toUserDto(userService.createUser(userDto));
+        return UserMapper.toUserDto((userService.createUser(userDto)));
     }
 
     @PutMapping
@@ -44,26 +42,28 @@ public class UserController {
     }
 
     @GetMapping
-    public List<UserDto> getAllUsers() {
+    public List<User> getAllUsers() {
         log.info("Получен запрос на получение всех пользователей.");
         return userService.getAllUsers();
     }
 
     @GetMapping("/{id}")
-    public UserDto getUserById(@PathVariable long id) {
+    public Optional<User> getUserById(@PathVariable Long id) {
         log.info("Получен запрос на получение пользователя по id {}.", id);
         return userService.getUser(id);
     }
 
     @DeleteMapping("/{id}")
-    public void deleteUser(@PathVariable long id) {
+    public void deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
-        log.info("Удален пользователь с id {}", id);
+        log.info("Удален пользователь с id {} ", id);
     }
 
-    @PutMapping("/{id}/friends/{friendId}")
-    public void postFriend(@PathVariable Long id, @PathVariable Long friendId) {
-        userService.addFriend(id, friendId);
+    @ResponseStatus(HttpStatus.OK)
+    @PutMapping("/{userId}/friends/{friendId}")
+    public void postFriend(@PathVariable Long userId, @PathVariable Long friendId) {
+        log.info("Получен запрос на добавление пользователя с id {} ", friendId);
+        userService.addFriend(userId, friendId);
     }
 
     @ResponseStatus(HttpStatus.OK)

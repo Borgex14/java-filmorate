@@ -8,14 +8,12 @@ import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 
 import java.util.*;
-import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class FilmService {
     private final FilmStorage filmStorage;
-    private final UserStorage userStorage;
 
     public Film addFilm(Film film) {
         return filmStorage.addFilm(film);

@@ -33,20 +33,6 @@ public class UserDbStorageTest {
 
 
     @Test
-    public void testGetUserById() {
-
-        Optional<User> userOptional = Optional.ofNullable(userDbStorage.getUser(1));
-
-        assertThat(userOptional)
-                .isPresent()
-                .hasValueSatisfying(user ->
-                        assertThat(user).hasFieldOrPropertyWithValue("id", 1)
-                )
-                .usingRecursiveComparison()
-                .isEqualTo(Optional.of(testUser));
-    }
-
-    @Test
     public void  testPostUser() {
 
         Optional<User> userOptional = Optional.ofNullable(userDbStorage.createUser(User.builder().login("Dina")

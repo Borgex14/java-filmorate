@@ -9,6 +9,7 @@ import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 import ru.yandex.practicum.filmorate.mappers.UserMapper;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -20,17 +21,17 @@ public class UserService {
         this.userStorage = userStorage;
     }
 
-    public void addFriend(long userId, long friendId) {
-        userStorage.getUser(userId);
+    public void addFriend(Long userId, Long friendId) {
+        userStorage.addFriend(userId, friendId);
         log.info("Пользователь с id {} теперь друг пользователя с id {}", userId, friendId);
     }
 
-    public void removeFriend(long userId, long friendId) {
-        userStorage.getUser(userId);
+    public void removeFriend(Long userId, Long friendId) {
+        userStorage.removeFriend(userId, friendId);
         log.info("Пользователь с id {} больше не друг пользователя с id {}", userId, friendId);
     }
 
-    public List<User> getCommonFriends(long user1Id, long user2Id) {
+    public List<User> getCommonFriends(Long user1Id, Long user2Id) {
         return userStorage.getCommonFriends(user1Id, user2Id);
     }
 
@@ -42,21 +43,19 @@ public class UserService {
         return userStorage.updateUser(UserMapper.toModel(userDto));
     }
 
-    public List<UserDto> getAllUsers() {
-        return userStorage.getAllUsers().stream()
-                .map(UserMapper::toUserDto)
-                .toList();
+    public List<User> getAllUsers() {
+        return userStorage.getAllUsers();
     }
 
-    public UserDto getUser(Long userId) {
-        return UserMapper.toUserDto(userStorage.getUser(userId));
+    public Optional<User> getUser(Long userId) {
+        return userStorage.getUser(userId);
     }
 
     public void deleteUser(Long userId) {
          userStorage.deleteUser(userId);
     }
 
-    public List<User> getFriends(Long userId) {
-        return userStorage.getFriends(userId);
+    public List<User> getFriends(Long id) {
+        return userStorage.getFriends(id);
     }
 }
