@@ -31,8 +31,8 @@ public class UserService {
         log.info("Пользователь с id {} больше не друг пользователя с id {}", userId, friendId);
     }
 
-    public List<User> getCommonFriends(Long user1Id, Long user2Id) {
-        return userStorage.getCommonFriends(user1Id, user2Id);
+    public List<User> getCommonFriends(Long id, Long otherId) {
+        return userStorage.getCommonFriends(id, otherId);
     }
 
     public User createUser(UserDto userDto) {

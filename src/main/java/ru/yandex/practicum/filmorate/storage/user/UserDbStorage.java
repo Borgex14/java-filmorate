@@ -145,9 +145,7 @@ public class UserDbStorage implements UserStorage {
             throw new ValidationException("Пользователи уже являются друзьями");
         }
 
-        log.info("Получен запрос на получение пользователя по id {}.", user1Id);
         Optional<User> mainUser = getUser(user1Id);
-        log.info("Получен запрос на получение пользователя по id {}.", user2Id);
         Optional<User> friendUser = getUser(user2Id);
 
         if (mainUser.isPresent() && friendUser.isPresent()) {
