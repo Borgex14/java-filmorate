@@ -1,28 +1,12 @@
-MERGE INTO genre AS target
-USING (VALUES
-    (1, 'Комедия'),
-    (2, 'Драма'),
-    (3, 'Мультфильм'),
-    (4, 'Триллер'),
-    (5, 'Документальный'),
-    (6, 'Боевик')
-) AS source (genre_id, genre_name)
-ON target.id = source.genre_id
-WHEN MATCHED THEN
-    UPDATE SET name = source.genre_name
-WHEN NOT MATCHED THEN
-    INSERT (id, name) VALUES (source.genre_id, source.genre_name);
+INSERT INTO rating(name) values ('G');
+INSERT INTO rating(name) values ('PG');
+INSERT INTO rating(name) values ('PG-13');
+INSERT INTO rating(name) values ('R');
+INSERT INTO rating(name) values ('NC-17');
 
-MERGE INTO rating AS target
-USING (VALUES
-    (1, 'G'),
-    (2, 'PG'),
-    (3, 'PG-13'),
-    (4, 'R'),
-    (5, 'NC-17')
-) AS source (rating_id, rating_name)
-ON target.id = source.rating_id
-WHEN MATCHED THEN
-    UPDATE SET name = source.rating_name
-WHEN NOT MATCHED THEN
-    INSERT (id, name) VALUES (source.rating_id, source.rating_name);
+INSERT INTO genres(name) values ('Комедия');
+INSERT INTO genres(name) values ('Драма');
+INSERT INTO genres(name) values ('Мультфильм');
+INSERT INTO genres(name) values ('Триллер');
+INSERT INTO genres(name) values ('Документальный');
+INSERT INTO genres(name) values ('Боевик');

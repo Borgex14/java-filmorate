@@ -24,11 +24,11 @@ public class UserDbStorageTest {
     @Autowired
     private final UserDbStorage userDbStorage;
 
-    User testUser = User.builder().id(1).login("mlll").email("pl@mail.ru").name("Tania")
+    User testUser = User.builder().id(1L).login("mlll").email("pl@mail.ru").name("Tania")
             .birthday(LocalDate.of(1980,12,6)).build();
-    User postTestUser = User.builder().id(2).login("urt").email("jim@mail.com").name("Ana")
+    User postTestUser = User.builder().id(2L).login("urt").email("jim@mail.com").name("Ana")
             .birthday(LocalDate.of(1967, 4,7)).build();
-    User putTestUser = User.builder().id(1).login("urt").email("jim@mail.com").name("Nastia")
+    User putTestUser = User.builder().id(1L).login("urt").email("jim@mail.com").name("Nastia")
             .birthday(LocalDate.of(1977, 3,7)).build();
 
 
@@ -46,7 +46,7 @@ public class UserDbStorageTest {
 
     @Test
     public void testPutUser() {
-        Optional<User> userOptional = Optional.ofNullable(userDbStorage.updateUser(User.builder().id(1).login("urt")
+        Optional<User> userOptional = Optional.ofNullable(userDbStorage.updateUser(User.builder().id(1L).login("urt")
                 .email("jim@mail.com").name("Marina").birthday(LocalDate.of(1977, 9,10)).build()));
 
         assertThat(userOptional)

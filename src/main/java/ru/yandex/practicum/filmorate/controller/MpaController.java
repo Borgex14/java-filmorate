@@ -14,10 +14,13 @@ import java.util.List;
 @RestController
 @RequestMapping("/mpa")
 @Slf4j
-@RequiredArgsConstructor
 public class MpaController {
 
     private final MpaService mpaService;
+
+    public MpaController(MpaService mpaService) {
+        this.mpaService = mpaService;
+    }
 
     @GetMapping
     public List<Mpa> getAllRatings() {
@@ -26,8 +29,7 @@ public class MpaController {
     }
 
     @GetMapping("/{id}")
-    public Mpa getRatingById(@PathVariable int id) {
-        log.info("Получен запрос на получение фильма с id {}", id);
-        return mpaService.getRatingById(id);
+    public Mpa getNameById(@PathVariable Long id) {
+        return mpaService.getNameById(id);
     }
 }

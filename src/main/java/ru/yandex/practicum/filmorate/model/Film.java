@@ -20,6 +20,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class Film {
     private long id;
+
     @NotBlank
     @NotNull(message = "Название не может быть пустым")
     private String name;
@@ -33,6 +34,6 @@ public class Film {
     @Positive(message = "Продолжительность должна быть положительным числом")
     private Integer duration;
     private Mpa mpa;
-    @Builder.Default
-    private List<Genre> genre = new ArrayList<>();
+
+    private List<Genre> genres;
 }

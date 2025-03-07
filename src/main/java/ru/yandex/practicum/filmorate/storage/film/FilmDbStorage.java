@@ -1,163 +1,159 @@
 package ru.yandex.practicum.filmorate.storage.film;
 
+import java.sql.PreparedStatement;
 import java.sql.Timestamp;
-import java.time.ZoneId;
-import java.time.temporal.ChronoField;
 import java.util.*;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.Primary;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
+import org.springframework.http.HttpHeaders;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
-import org.springframework.stereotype.Repository;
+import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.Mpa;
-import ru.yandex.practicum.filmorate.storage.genre.GenreRowMapper;
+import ru.yandex.practicum.filmorate.storage.filmGenre.FilmGenreStorage;
+import ru.yandex.practicum.filmorate.storage.genre.GenreStorage;
+import ru.yandex.practicum.filmorate.storage.mpa.MpaStorage;
 
-@Primary
-@Repository
+
+@Slf4j
+@Component
 @RequiredArgsConstructor
 public class FilmDbStorage implements FilmStorage {
 
-
     private final NamedParameterJdbcOperations jdbcOperations;
+    private final JdbcTemplate jdbcTemplate;
     private final FilmRowMapper filmRowMapper;
+    private final GenreStorage genreStorage;
+    private final FilmGenreStorage filmGenreStorage;
+    private final MpaStorage mpaStorage;
 
     @Override
     public Film addFilm(Film film) {
         checkMpa(film.getMpa());
-        checkGenre(film.getGenre());
-
-        String sqlQuery = "INSERT INTO films (name, description, release_date, duration, genre, rating_id) " +
-                "VALUES (:name, :description, :releaseDate, :duration, :genre, :rating_Id)";
-        MapSqlParameterSource parameterSource = new MapSqlParameterSource();
-        parameterSource.addValue("name", film.getName());
-        parameterSource.addValue("description", film.getDescription());
-        parameterSource.addValue("releaseDate", Timestamp.valueOf(film.getReleaseDate().atStartOfDay()));
-        parameterSource.addValue("duration", film.getDuration());
-        parameterSource.addValue("genre", film.getGenre());
-        parameterSource.addValue("rating_Id", film.getMpa().getId());
-
         KeyHolder keyHolder = new GeneratedKeyHolder();
+        log.info("Добавление нового фильма: {}", film.getName());
 
-        jdbcOperations.update(sqlQuery, parameterSource, keyHolder, new String[] {"film_id"});
+        String sqlQueryFilm = "INSERT INTO films (name, description, release_date, duration, rating_id) " +
+                "VALUES (?, ?, ?, ?, ?)";
 
-        film.setId(keyHolder.getKey().longValue());
+        film.setMpa(mpaStorage.getNameById(Long.valueOf(film.getMpa().getId())));
 
-        String sqlQuery1 = "INSERT INTO film_genre (genre_id, film_id) VALUES (:genreId, :filmId)";
+        jdbcTemplate.update(connection -> {
+            PreparedStatement stmt = connection.prepareStatement(sqlQueryFilm, new String[]{"id"});
+            stmt.setString(1, film.getName());
+            stmt.setString(2, film.getDescription());
+            stmt.setTimestamp(3, Timestamp.valueOf(film.getReleaseDate().atStartOfDay())); // Убедитесь, что формат правильный
+            stmt.setInt(4, film.getDuration());
+            stmt.setLong(5, film.getMpa().getId());
+            return stmt;
+        }, keyHolder);
 
-        List<Map<String, Object>> genreBatchValues = new ArrayList<>();
+        long filmId = Optional.ofNullable(keyHolder.getKey())
+                .map(Number::longValue)
+                .orElseThrow(() -> new ValidationException("Ошибка добавления фильма в таблицу"));
 
-        List<Genre> genres = film.getGenre();
+        filmGenreStorage.addGenresInFilmGenres(film, filmId);
 
-        for (Genre genre : genres) {
-            Map<String, Object> paramMap = new HashMap<>();
-            paramMap.put("genreId", genre.getId());
-            paramMap.put("filmId", film.getId());
-            genreBatchValues.add(paramMap);
-        }
 
-        jdbcOperations.batchUpdate(sqlQuery1, genreBatchValues.toArray(new Map[0]));
+        log.info("Фильм c id = {} успешно добавлен", filmId);
+        log.info("Film MPA: {}", film.getMpa().getName());
+        log.info("Film Genres: {}", film.getGenres());
 
-        return film;
+        return Film.builder()
+                .id(filmId)
+                .name(film.getName())
+                .description(film.getDescription())
+                .releaseDate(film.getReleaseDate())
+                .duration(film.getDuration())
+                .mpa(film.getMpa())
+                .genres(film.getGenres())
+                .build();
     }
+
 
     @Override
     public Film updateFilm(Film film) {
         checkMpa(film.getMpa());
-        checkGenre(film.getGenre());
-        checkId("films", "id", film.getId());
 
-        String updateQuery = "UPDATE films SET name = :name, description = :description, release_date = :releaseDate, "
-                + "duration = :duration, rating_id = :mpaId WHERE id = :id";
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        final long filmId;
 
-        MapSqlParameterSource param = new MapSqlParameterSource();
-        param.addValue("name", film.getName());
-        param.addValue("description", film.getDescription());
-        param.addValue("releaseDate", new Timestamp(film.getReleaseDate().atStartOfDay()
-                .atZone(ZoneId.systemDefault()).toInstant().getLong(ChronoField.INSTANT_SECONDS)));
-        param.addValue("duration", film.getDuration());
-        param.addValue("mpaId", film.getMpa().getId());
-        param.addValue("id", film.getId());
+        log.info("Обновление данных фильма с id = {}", film.getId());
 
-        jdbcOperations.update(updateQuery, param);
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Content-Type", "application/json");
 
-        String deleteFilmGenresQuery = "DELETE FROM film_genre WHERE film_id = :id";
+        String sqlQuery = "UPDATE films SET " +
+                "name = ?, description = ?, releaseDate = ?, duration = ? " +
+                "where id = ?";
 
-        jdbcOperations.update(deleteFilmGenresQuery, param);
+        int rows = jdbcTemplate.update(connection -> {
+            PreparedStatement stmt = connection.prepareStatement(sqlQuery, new String[]{"id"});
+            stmt.setString(1, film.getName());
+            stmt.setString(2, film.getDescription());
+            stmt.setString(3, film.getReleaseDate().toString());
+            stmt.setInt(4, film.getDuration());
+            stmt.setLong(5, film.getId());
+            return stmt;
+        }, keyHolder);
 
-        String addGenresQuery = "INSERT INTO film_genre (film_id, genre_id) VALUES (:filmId, :genreId)";
-
-        List<Map<String, Object>> genreBatchValues = new ArrayList<>();
-
-        List<Genre> genres = film.getGenre();
-
-        for (Genre genre : genres) {
-            Map<String, Object> paramMap = new HashMap<>();
-            paramMap.put("genreId", genre.getId());
-            paramMap.put("filmId", film.getId());
-            genreBatchValues.add(paramMap);
+        if (Objects.nonNull(keyHolder.getKey())) {
+            filmId = keyHolder.getKey().longValue();
+        } else {
+            throw new NotFoundException("Ошибка обновления фильма");
         }
 
-        jdbcOperations.batchUpdate(addGenresQuery, genreBatchValues.toArray(new Map[0]));
+        Film resultFilm = Film.builder()
+                .id(filmId)
+                .name(film.getName())
+                .description(film.getDescription())
+                .releaseDate(film.getReleaseDate())
+                .duration(film.getDuration())
+                .build();
 
-        return film;
+        if (rows > 0) {
+            log.info("Фильм с id = {} успешно обновлён", filmId);
+            return resultFilm;
+
+        } else {
+            log.error("Ошибка обновления фильма id = {}", filmId);
+            throw new NotFoundException("Ошибка обновления фильма id = " + filmId);
+        }
     }
+
 
     @Override
     public Film getFilm(long id) {
-        String sqlQuery1 = "SELECT f.id, f.name, f.description, f.release_date, f.duration, f.genre, f.rating_id, " +
-                "r.rating_name FROM films AS f INNER JOIN rating AS r ON f.rating_id = r.id GROUP BY f.id, f.name, " +
-                "f.description, f.release_date, f.duration, f.rating_id, r.name" +
-                "WHERE id = :id ";
-        MapSqlParameterSource param = new MapSqlParameterSource();
-        param.addValue("id", id);
+        log.info("Поиск фильма по id = {}", id);
 
-        Film film = jdbcOperations.queryForObject(sqlQuery1, param, filmRowMapper);
+        final String sqlQuery = "SELECT id, name, description, releaseDate, duration, mpa_id " +
+                "FROM films WHERE id = ?";
 
-        String sqlQuery2 = "SELECT DISTINCT fl.genre_id, g.name FROM film_genre AS fl INNER JOIN genre AS g " +
-                "ON fl.genre_id = g.id WHERE id = :id";
+        Optional<Film> resultFilm = Optional.ofNullable(jdbcTemplate.queryForObject(sqlQuery,
+                filmRowMapper::mapRow, id));
 
-        List<Genre> filmGenres = jdbcOperations.query(sqlQuery2, param, new GenreRowMapper());
+        if (resultFilm.isPresent()) {
+            return resultFilm.get();
 
-        film.setGenre(filmGenres);
-
-        return film;
+        } else {
+            throw new NotFoundException("Фильм с id = " + id + " не найден");
+        }
     }
 
     @Override
     public List<Film> getAllFilms() {
-        String sql = "SELECT * FROM films";
-        String query1 = "SELECT f.id, f.name, f.description, f.release_date, f.duration, f.rating_id, r.name" +
-                " FROM films AS f INNER JOIN rating AS r ON f.rating_id = r.id GROUP BY f.id, f.name, f.description, " +
-                "f.release_date, f.duration, f.rating_id, r.name";
-
-        List<Film> filmsList = jdbcOperations.query(query1,filmRowMapper);
-
-        String query2 = "SELECT DISTINCT f.id, f.genre_id, g.name FROM film_genre AS f INNER JOIN genre AS g ON " +
-                "f.genre_id = g.id ";
-
-        Map<Integer, List<Genre>> resultMap = new LinkedHashMap<>();
-
-
-        jdbcOperations.query(query2, rs -> {
-            long genreId = rs.getLong("genre_id");
-            int filmId = rs.getInt("film_id");
-            String genreName = rs.getString("name");
-            resultMap.computeIfAbsent(filmId, k -> new ArrayList<>()).add(Genre.builder().id(genreId).name(genreName).build());
-        });
-
-        for (Film film : filmsList) {
-            film.setGenre(resultMap.get(film.getId()));
-        }
-
-        return filmsList;
+        log.info("Получение всех фильмов");
+        final String sqlQuery = "SELECT id, name, description, releaseDate, duration, mpa_id FROM films";
+        return jdbcTemplate.query(sqlQuery, filmRowMapper::mapRow);
     }
 
     @Override
@@ -266,7 +262,7 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     private void checkGenre(List<Genre> genresList) {
-        String checkMpaQuery = "SELECT id FROM genre";
+        String checkMpaQuery = "SELECT id FROM genres";
         List<Integer> genresIdList = jdbcOperations.queryForList(checkMpaQuery, new HashMap<>(), Integer.class);
 
         for (Genre genre : genresList) {

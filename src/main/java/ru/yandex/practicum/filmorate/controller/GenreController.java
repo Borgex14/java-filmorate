@@ -14,20 +14,22 @@ import java.util.List;
 @RestController
 @RequestMapping("/genres")
 @Slf4j
-@RequiredArgsConstructor
 public class GenreController {
 
     private final GenreService genreService;
 
-    @GetMapping("/{id}")
-    public Genre getGenreById(@PathVariable int id) {
-        log.info("Получен запрос на получение жанра с id {}.", id);
-        return genreService.getGenreById(id);
+    public GenreController(GenreService genreService) {
+        this.genreService = genreService;
     }
 
     @GetMapping
     public List<Genre> getAllGenres() {
         log.info("Получен запрос на получение всех жанров.");
         return genreService.getAllGenres();
+    }
+
+    @GetMapping("/{id}")
+    public Genre getNameById(@PathVariable Long id) {
+        return genreService.getNameById(id);
     }
 }
