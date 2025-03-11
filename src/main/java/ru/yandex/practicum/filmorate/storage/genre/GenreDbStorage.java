@@ -26,7 +26,7 @@ public class GenreDbStorage implements GenreStorage {
     private final JdbcTemplate jdbcTemplate;
 
     @Override
-    public Genre getGenreById(int id) {
+    public Genre getGenreById(long id) {
 
         String getGenreQuery = "SELECT id, name AS cnt FROM genres WHERE id = :id";
 
@@ -40,10 +40,14 @@ public class GenreDbStorage implements GenreStorage {
         }
     }
 
-    @Override
     public List<Genre> getAllGenres() {
-        String getAllGenresQuery = "SELECT id, name  FROM genres";
-        return jdbcOperations.query(getAllGenresQuery, genreRowMapper);
+        String sql = "SELECT id, name FROM genres";
+
+        return jdbcTemplate.query(sql, (rs, rowNum) -> {
+            long id = rs.getLong("id");
+            String name = rs.getString("name");
+            return new Genre(id, name);
+        });
     }
 
     public Collection<Long> findIds() {
@@ -76,19 +80,24 @@ public class GenreDbStorage implements GenreStorage {
     }
 
     public Collection<Genre> getExistGenres(Film film) {
-        List<Long> genres = findIds().stream().toList();
+        List<Long> genreIds = findIds().stream().toList();
         List<Genre> filmGenres = film.getGenres();
         List<Genre> resultGenres = new ArrayList<>();
 
-        if (Objects.nonNull(filmGenres)) {
-            filmGenres.forEach(genre -> {
-                        if (genres.contains(genre.getId())) {
-                            resultGenres.add(genre);
-                        } else {
-                            throw new ValidationException("Указанный жанр не существует");
-                        }
+        if (filmGenres != null) {
+            for (Genre genre : filmGenres) {
+                if (genre != null) {
+                    if (genreIds.contains(genre.getId())) {
+                        resultGenres.add(genre);
+                    } else {
+                        throw new ValidationException("Указанный жанр не существует");
                     }
-            );
+                } else {
+                    throw new ValidationException("Найден null жанр в списке");
+                }
+            }
+        } else {
+            throw new ValidationException("Список жанров фильма пустой");
         }
         return resultGenres;
     }

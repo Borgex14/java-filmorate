@@ -2,7 +2,9 @@ package ru.yandex.practicum.filmorate.storage.film;
 
 import java.sql.PreparedStatement;
 import java.sql.Timestamp;
+import java.time.LocalDate;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,13 +41,29 @@ public class FilmDbStorage implements FilmStorage {
     @Override
     public Film addFilm(Film film) {
         checkMpa(film.getMpa());
+
+        if (film.getReleaseDate().isBefore(LocalDate.of(1895, 12, 28))) {
+            throw new ValidationException("Дата релиза должна быть не раньше 28 декабря 1895 года");
+        }
+
         KeyHolder keyHolder = new GeneratedKeyHolder();
         log.info("Добавление нового фильма: {}", film.getName());
 
         String sqlQueryFilm = "INSERT INTO films (name, description, release_date, duration, rating_id) " +
                 "VALUES (?, ?, ?, ?, ?)";
 
-        film.setMpa(mpaStorage.getNameById(Long.valueOf(film.getMpa().getId())));
+        Mpa mpa = mpaStorage.getNameById(Long.valueOf(film.getMpa().getId()));
+        if (mpa == null) {
+            throw new NotFoundException("MPA не найдено с ID: " + film.getMpa().getId());
+        }
+        film.setMpa(mpa);
+
+        List<Genre> genres = film.getGenres() != null ? film.getGenres() : new ArrayList<>();
+        List<Genre> selectedGenres = genres.stream()
+                .map(genre -> genreStorage.getGenreById(genre.getId()))
+                .collect(Collectors.toList());
+
+        film.setGenres(selectedGenres);
 
         jdbcTemplate.update(connection -> {
             PreparedStatement stmt = connection.prepareStatement(sqlQueryFilm, new String[]{"id"});
@@ -62,7 +80,6 @@ public class FilmDbStorage implements FilmStorage {
                 .orElseThrow(() -> new ValidationException("Ошибка добавления фильма в таблицу"));
 
         filmGenreStorage.addGenresInFilmGenres(film, filmId);
-
 
         log.info("Фильм c id = {} успешно добавлен", filmId);
         log.info("Film MPA: {}", film.getMpa().getName());
@@ -85,7 +102,6 @@ public class FilmDbStorage implements FilmStorage {
         checkMpa(film.getMpa());
 
         KeyHolder keyHolder = new GeneratedKeyHolder();
-        final long filmId;
 
         log.info("Обновление данных фильма с id = {}", film.getId());
 
@@ -93,11 +109,11 @@ public class FilmDbStorage implements FilmStorage {
         headers.set("Content-Type", "application/json");
 
         String sqlQuery = "UPDATE films SET " +
-                "name = ?, description = ?, releaseDate = ?, duration = ? " +
+                "name = ?, description = ?, release_date = ?, duration = ? " +
                 "where id = ?";
 
         int rows = jdbcTemplate.update(connection -> {
-            PreparedStatement stmt = connection.prepareStatement(sqlQuery, new String[]{"id"});
+            PreparedStatement stmt = connection.prepareStatement(sqlQuery);
             stmt.setString(1, film.getName());
             stmt.setString(2, film.getDescription());
             stmt.setString(3, film.getReleaseDate().toString());
@@ -106,28 +122,21 @@ public class FilmDbStorage implements FilmStorage {
             return stmt;
         }, keyHolder);
 
-        if (Objects.nonNull(keyHolder.getKey())) {
-            filmId = keyHolder.getKey().longValue();
-        } else {
-            throw new NotFoundException("Ошибка обновления фильма");
+        if (rows == 0) {
+            log.error("Фильм с id = {} не найден для обновления", film.getId());
+            throw new NotFoundException("Ошибка обновления: фильм с id = " + film.getId() + " не найден");
         }
 
-        Film resultFilm = Film.builder()
-                .id(filmId)
+        log.info("Фильм с id = {} успешно обновлён", film.getId());
+
+        return Film.builder()
+                .id(film.getId())
                 .name(film.getName())
                 .description(film.getDescription())
                 .releaseDate(film.getReleaseDate())
                 .duration(film.getDuration())
+                .mpa(film.getMpa()) // добавим MPA для полноты обновленного объекта
                 .build();
-
-        if (rows > 0) {
-            log.info("Фильм с id = {} успешно обновлён", filmId);
-            return resultFilm;
-
-        } else {
-            log.error("Ошибка обновления фильма id = {}", filmId);
-            throw new NotFoundException("Ошибка обновления фильма id = " + filmId);
-        }
     }
 
 
