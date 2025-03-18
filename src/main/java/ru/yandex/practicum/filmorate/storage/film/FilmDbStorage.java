@@ -61,6 +61,7 @@ public class FilmDbStorage implements FilmStorage {
         List<Genre> genres = film.getGenres() != null ? film.getGenres() : new ArrayList<>();
         List<Genre> selectedGenres = genres.stream()
                 .map(genre -> genreStorage.getGenreById(genre.getId()))
+                .filter(Objects::nonNull)
                 .collect(Collectors.toList());
 
         film.setGenres(selectedGenres);
@@ -82,8 +83,6 @@ public class FilmDbStorage implements FilmStorage {
         filmGenreStorage.addGenresInFilmGenres(film, filmId);
 
         log.info("Фильм c id = {} успешно добавлен", filmId);
-        log.info("Film MPA: {}", film.getMpa().getName());
-        log.info("Film Genres: {}", film.getGenres());
 
         return Film.builder()
                 .id(filmId)
@@ -127,6 +126,13 @@ public class FilmDbStorage implements FilmStorage {
             throw new NotFoundException("Ошибка обновления: фильм с id = " + film.getId() + " не найден");
         }
 
+        Mpa mpa = mpaStorage.getNameById(Long.valueOf(film.getMpa().getId()));
+        if (mpa == null) {
+            throw new NotFoundException("MPA с id = " + film.getMpa().getId() + " не найден");
+        }
+
+        List<Genre> genres = Collections.singletonList(genreStorage.getGenreById(film.getId()));
+
         log.info("Фильм с id = {} успешно обновлён", film.getId());
 
         return Film.builder()
@@ -135,16 +141,16 @@ public class FilmDbStorage implements FilmStorage {
                 .description(film.getDescription())
                 .releaseDate(film.getReleaseDate())
                 .duration(film.getDuration())
-                .mpa(film.getMpa()) // добавим MPA для полноты обновленного объекта
+                .mpa(mpa) // Устанавливаем загруженное MPA с именем
+                .genres(genres) // Устанавливаем загруженные жанры // добавим MPA для полноты обновленного объекта
                 .build();
     }
-
 
     @Override
     public Film getFilm(long id) {
         log.info("Поиск фильма по id = {}", id);
 
-        final String sqlQuery = "SELECT id, name, description, releaseDate, duration, mpa_id " +
+        final String sqlQuery = "SELECT id, name, description, release_date, duration, rating_id " +
                 "FROM films WHERE id = ?";
 
         Optional<Film> resultFilm = Optional.ofNullable(jdbcTemplate.queryForObject(sqlQuery,
@@ -161,34 +167,38 @@ public class FilmDbStorage implements FilmStorage {
     @Override
     public List<Film> getAllFilms() {
         log.info("Получение всех фильмов");
-        final String sqlQuery = "SELECT id, name, description, releaseDate, duration, mpa_id FROM films";
-        return jdbcTemplate.query(sqlQuery, filmRowMapper::mapRow);
+        final String sqlQuery = "SELECT id, name, description, release_date, duration, rating_id FROM films";
+        List<Film> films = jdbcTemplate.query(sqlQuery, filmRowMapper::mapRow);
+        log.info("Полученные фильмы: {}", films);
+        return films;
     }
 
     @Override
     public void deleteFilm(long id) {
-        checkId("films", "film_id", id); // Проверяем, существует ли фильм с данным id
+        checkId("films", "id", id); // Проверяем, существует ли фильм с данным id
 
-        String deleteQuery = "DELETE FROM films WHERE id = :filmId"; // SQL-запрос для удаления фильма
+        String deleteQuery = "DELETE FROM films WHERE id = :id"; // SQL-запрос для удаления фильма
 
         MapSqlParameterSource param = new MapSqlParameterSource();
-        param.addValue("filmId", id); // Добавляем параметр id в запрос
+        param.addValue("id", id); // Добавляем параметр id в запрос
 
         jdbcOperations.update(deleteQuery, param); // Выполняем обновление в базе данных
     }
 
     public void addLike(long filmId, long userId) {
-        String addLikeQuery = "INSERT INTO likes (film_id, user_id) VALUES (:filmId, :userId)";
-        checkId("films", "film_id", filmId);
-        checkId("users", "user_id", userId);
+        String addLikeQuery = "INSERT INTO likes (film_id, user_id) VALUES (:film_id, :user_id)";
+        checkId("films", "id", filmId);
+        checkId("users", "id", userId);
+
+        log.info("Добавление лайка для фильма с ID: {} от пользователя с ID: {}", filmId, userId);
 
         KeyHolder keyHolder = new GeneratedKeyHolder();
 
         MapSqlParameterSource param = new MapSqlParameterSource();
-        param.addValue("filmId", filmId);
-        param.addValue("userId", userId);
+        param.addValue("film_id", filmId);
+        param.addValue("user_id", userId);
 
-        jdbcOperations.update(addLikeQuery, param, keyHolder, new String[] {"like_id"});
+        jdbcOperations.update(addLikeQuery, param, keyHolder, new String[] {"id"});
     }
 
     @Override
@@ -221,6 +231,8 @@ public class FilmDbStorage implements FilmStorage {
         String countQuery = "SELECT COUNT(film_id) AS amount_likes, film_id FROM likes " +
                 "GROUP BY film_id ORDER BY amount_likes DESC";
 
+        log.info("Запрос к базе данных для получения популярных фильмов");
+
         Map<Integer, Integer> resultMap = new LinkedHashMap<>();
 
         jdbcOperations.query(countQuery, rs -> {
@@ -229,14 +241,18 @@ public class FilmDbStorage implements FilmStorage {
             resultMap.put(filmId, amountLikes);
         });
 
+        if (resultMap.isEmpty()) {
+            log.warn("Нет популярных фильмов, возвращается пустой список");
+        }
+
         return resultMap.keySet().stream()
                 .map(this::getFilm)
-                .limit(Long.parseLong(count))
+                .limit(countInt)
                 .toList();
     }
 
     private void checkId(String tableName, String columnName, long id) {
-        String query = String.format("SELECT EXISTS(SELECT 1 FROM %s WHERE %s = :id)", tableName, columnName);
+        String query = String.format("SELECT EXISTS(SELECT 1 FROM films WHERE id = :id)", tableName, columnName);
         MapSqlParameterSource parameterSource = new MapSqlParameterSource();
         parameterSource.addValue("id", id);
         try {
@@ -253,7 +269,7 @@ public class FilmDbStorage implements FilmStorage {
         MapSqlParameterSource param = new MapSqlParameterSource();
         param.addValue("id", mpa.getId());
 
-        if (jdbcOperations.queryForObject(checkMpaQuery, param, Integer.class) == 0) {
+        if (jdbcOperations.queryForObject(checkMpaQuery, param, Long.class) == 0) {
             throw new NotFoundException("Рейтинг с id " + mpa.getId() + " не найден.");
         }
     }

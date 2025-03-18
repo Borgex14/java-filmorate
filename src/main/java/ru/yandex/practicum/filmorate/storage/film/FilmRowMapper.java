@@ -15,14 +15,14 @@ public class FilmRowMapper implements RowMapper<Film> {
     @Override
     public Film mapRow(ResultSet rs, int rowNum) throws SQLException {
         return Film.builder()
-                .id(rs.getLong(1))
-                .name(rs.getString(2))
-                .description(rs.getString(3))
-                .releaseDate(rs.getTimestamp(4).toInstant().atZone(ZoneId.systemDefault()).toLocalDate())
-                .duration(rs.getInt(5))
+                .id(rs.getLong("id"))
+                .name(rs.getString("name"))
+                .description(rs.getString("description"))
+                .releaseDate(rs.getTimestamp("release_date").toInstant().atZone(ZoneId.systemDefault()).toLocalDate())
+                .duration(rs.getInt("duration"))
                 .mpa(Mpa.builder()
-                        .id(rs.getInt(6))
-                        .name(rs.getString(7))
+                        .id(rs.getInt("rating_id"))
+                        .name(rs.getString("name"))
                         .build()).build();
     }
 }
