@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS films (
   id BIGINT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
   description VARCHAR(255) NOT NULL,
-  release_date TIMESTAMP NOT NULL,
+  release_date DATE,
   duration INTEGER,
   rating_id INTEGER,
   FOREIGN KEY (rating_id) REFERENCES rating(id)

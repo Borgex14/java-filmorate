@@ -20,7 +20,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class Film {
     private long id;
-
+    Long likes;
     @NotBlank
     @NotNull(message = "Название не может быть пустым")
     private String name;

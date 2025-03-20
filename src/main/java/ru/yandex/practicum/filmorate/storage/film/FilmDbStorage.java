@@ -1,7 +1,7 @@
 package ru.yandex.practicum.filmorate.storage.film;
 
 import java.sql.PreparedStatement;
-import java.sql.Timestamp;
+import java.sql.Date;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -47,10 +47,11 @@ public class FilmDbStorage implements FilmStorage {
         }
 
         KeyHolder keyHolder = new GeneratedKeyHolder();
-        log.info("Добавление нового фильма: {}", film.getName());
 
         String sqlQueryFilm = "INSERT INTO films (name, description, release_date, duration, rating_id) " +
                 "VALUES (?, ?, ?, ?, ?)";
+
+        log.info("Добавление нового фильма: {}", film.getName());
 
         Mpa mpa = mpaStorage.getNameById(Long.valueOf(film.getMpa().getId()));
         if (mpa == null) {
@@ -70,7 +71,7 @@ public class FilmDbStorage implements FilmStorage {
             PreparedStatement stmt = connection.prepareStatement(sqlQueryFilm, new String[]{"id"});
             stmt.setString(1, film.getName());
             stmt.setString(2, film.getDescription());
-            stmt.setTimestamp(3, Timestamp.valueOf(film.getReleaseDate().atStartOfDay())); // Убедитесь, что формат правильный
+            stmt.setDate(3, Date.valueOf(film.getReleaseDate())); // Устанавливаем LocalDate как java.sql.Date
             stmt.setInt(4, film.getDuration());
             stmt.setLong(5, film.getMpa().getId());
             return stmt;
@@ -81,6 +82,15 @@ public class FilmDbStorage implements FilmStorage {
                 .orElseThrow(() -> new ValidationException("Ошибка добавления фильма в таблицу"));
 
         filmGenreStorage.addGenresInFilmGenres(film, filmId);
+
+        log.info("Возвращаемый фильм: id={}, name={}, description={}, releaseDate={}, duration={}, mpa={}, genres={}",
+                filmId,
+                film.getName(),
+                film.getDescription(),
+                film.getReleaseDate(),
+                film.getDuration(),
+                film.getMpa() != null ? film.getMpa().getName() : "null",
+                film.getGenres() != null ? film.getGenres().stream().map(Genre::getName).collect(Collectors.joining(", ")) : "null");
 
         log.info("Фильм c id = {} успешно добавлен", filmId);
 
@@ -94,7 +104,6 @@ public class FilmDbStorage implements FilmStorage {
                 .genres(film.getGenres())
                 .build();
     }
-
 
     @Override
     public Film updateFilm(Film film) {
@@ -150,15 +159,16 @@ public class FilmDbStorage implements FilmStorage {
     public Film getFilm(long id) {
         log.info("Поиск фильма по id = {}", id);
 
-        final String sqlQuery = "SELECT id, name, description, release_date, duration, rating_id " +
-                "FROM films WHERE id = ?";
+        final String sqlQuery = "SELECT f.id, f.name, f.description, f.release_date, f.duration, f.rating_id, r.name as mpa_name " +
+                "FROM films f " +
+                "JOIN rating r ON f.rating_id = r.id " +
+                "WHERE f.id = ?";
 
         Optional<Film> resultFilm = Optional.ofNullable(jdbcTemplate.queryForObject(sqlQuery,
                 filmRowMapper::mapRow, id));
 
         if (resultFilm.isPresent()) {
             return resultFilm.get();
-
         } else {
             throw new NotFoundException("Фильм с id = " + id + " не найден");
         }
@@ -187,8 +197,9 @@ public class FilmDbStorage implements FilmStorage {
 
     public void addLike(long filmId, long userId) {
         String addLikeQuery = "INSERT INTO likes (film_id, user_id) VALUES (:film_id, :user_id)";
-        checkId("films", "id", filmId);
+        log.info("Проверка существования пользователя с ID: {}", userId);
         checkId("users", "id", userId);
+        checkId("films", "id", filmId);
 
         log.info("Добавление лайка для фильма с ID: {} от пользователя с ID: {}", filmId, userId);
 
@@ -241,26 +252,27 @@ public class FilmDbStorage implements FilmStorage {
             resultMap.put(filmId, amountLikes);
         });
 
+        log.info("Количество популярных фильмов: {}", resultMap.size());
+
         if (resultMap.isEmpty()) {
             log.warn("Нет популярных фильмов, возвращается пустой список");
         }
 
         return resultMap.keySet().stream()
                 .map(this::getFilm)
+                .filter(Objects::nonNull) // Фильтруем null значения
                 .limit(countInt)
                 .toList();
     }
 
     private void checkId(String tableName, String columnName, long id) {
-        String query = String.format("SELECT EXISTS(SELECT 1 FROM films WHERE id = :id)", tableName, columnName);
-        MapSqlParameterSource parameterSource = new MapSqlParameterSource();
-        parameterSource.addValue("id", id);
-        try {
-            if (jdbcOperations.queryForObject(query, parameterSource, Integer.class) == 0) {
-                throw new NotFoundException("Пользователь с id " + id + " не найден.");
-            }
-        } catch (DataAccessException e) {
-            e.getCause().printStackTrace();
+        String query = String.format("SELECT COUNT(*) FROM %s WHERE %s = :id", tableName, columnName);
+        MapSqlParameterSource param = new MapSqlParameterSource();
+        param.addValue("id", id);
+
+        int count = jdbcOperations.queryForObject(query, param, Integer.class);
+        if (count == 0) {
+            throw new ValidationException("Объект не найден: " + tableName + " с id " + id);
         }
     }
 
