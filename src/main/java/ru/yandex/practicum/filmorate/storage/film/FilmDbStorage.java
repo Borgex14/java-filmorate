@@ -8,7 +8,7 @@ import java.util.stream.Collectors;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.DataAccessException;
+
 import org.springframework.http.HttpHeaders;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -57,6 +57,7 @@ public class FilmDbStorage implements FilmStorage {
         if (mpa == null) {
             throw new NotFoundException("MPA не найдено с ID: " + film.getMpa().getId());
         }
+
         film.setMpa(mpa);
 
         List<Genre> genres = film.getGenres() != null ? film.getGenres() : new ArrayList<>();
@@ -71,7 +72,7 @@ public class FilmDbStorage implements FilmStorage {
             PreparedStatement stmt = connection.prepareStatement(sqlQueryFilm, new String[]{"id"});
             stmt.setString(1, film.getName());
             stmt.setString(2, film.getDescription());
-            stmt.setDate(3, Date.valueOf(film.getReleaseDate())); // Устанавливаем LocalDate как java.sql.Date
+            stmt.setDate(3, Date.valueOf(film.getReleaseDate()));
             stmt.setInt(4, film.getDuration());
             stmt.setLong(5, film.getMpa().getId());
             return stmt;
@@ -150,8 +151,8 @@ public class FilmDbStorage implements FilmStorage {
                 .description(film.getDescription())
                 .releaseDate(film.getReleaseDate())
                 .duration(film.getDuration())
-                .mpa(mpa) // Устанавливаем загруженное MPA с именем
-                .genres(genres) // Устанавливаем загруженные жанры // добавим MPA для полноты обновленного объекта
+                .mpa(mpa)
+                .genres(genres)
                 .build();
     }
 
@@ -185,14 +186,14 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public void deleteFilm(long id) {
-        checkId("films", "id", id); // Проверяем, существует ли фильм с данным id
+        checkId("films", "id", id);
 
-        String deleteQuery = "DELETE FROM films WHERE id = :id"; // SQL-запрос для удаления фильма
+        String deleteQuery = "DELETE FROM films WHERE id = :id";
 
         MapSqlParameterSource param = new MapSqlParameterSource();
-        param.addValue("id", id); // Добавляем параметр id в запрос
+        param.addValue("id", id);
 
-        jdbcOperations.update(deleteQuery, param); // Выполняем обновление в базе данных
+        jdbcOperations.update(deleteQuery, param);
     }
 
     public void addLike(long filmId, long userId) {
@@ -228,13 +229,13 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     public List<Film> getTopFilms(String count) {
-
         int countInt;
         try {
             countInt = Integer.parseInt(count);
         } catch (Exception e) {
             throw  new ValidationException("Передано не число, а " + count);
         }
+
         if (countInt <= 0) {
             throw new ValidationException("Количество фильмов должно быть больше нуля");
         }
@@ -271,6 +272,7 @@ public class FilmDbStorage implements FilmStorage {
         param.addValue("id", id);
 
         int count = jdbcOperations.queryForObject(query, param, Integer.class);
+
         if (count == 0) {
             throw new ValidationException("Объект не найден: " + tableName + " с id " + id);
         }
@@ -295,17 +297,6 @@ public class FilmDbStorage implements FilmStorage {
 
         if (jdbcOperations.queryForObject(checkLikeQuery, param, Integer.class) == 0) {
             throw new NotFoundException("Лайк от пользователя с id " + userId + " фильму с id " + filmId + " не найден.");
-        }
-    }
-
-    private void checkGenre(List<Genre> genresList) {
-        String checkMpaQuery = "SELECT id FROM genres";
-        List<Integer> genresIdList = jdbcOperations.queryForList(checkMpaQuery, new HashMap<>(), Integer.class);
-
-        for (Genre genre : genresList) {
-            if (!genresIdList.contains(genre.getId())) {
-                throw new NotFoundException("Жанра с id " + genre.getId() + " не найден.");
-            }
         }
     }
 }

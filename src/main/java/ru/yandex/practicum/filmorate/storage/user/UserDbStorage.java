@@ -35,7 +35,7 @@ public class UserDbStorage implements UserStorage {
             if (user.getBirthday() == null) {
                 throw new IllegalArgumentException("Birthday cannot be null");
             }
-            stmt.setDate(4, Date.valueOf(user.getBirthday())); // Убедитесь, что user.getBirthday() не null
+            stmt.setDate(4, Date.valueOf(user.getBirthday()));
             return stmt;
         }, keyHolder);
         log.info("Creating user with id:{}, email: {}, login: {}, name: {}, birthday: {}",
@@ -135,7 +135,7 @@ public class UserDbStorage implements UserStorage {
     }
 
     @Override
-    public void addFriend(Long user1Id, Long user2Id) { /// сделать проверку на повторы друзей
+    public void addFriend(Long user1Id, Long user2Id) {
         checkUserId(user1Id);
         checkUserId(user2Id);
         String checkFriendshipQuery = "SELECT COUNT(*) FROM friendships WHERE user_id = ? AND friend_id = ?";
@@ -230,11 +230,9 @@ public class UserDbStorage implements UserStorage {
         List<User> result = new ArrayList<>();
 
         for (Long friendId : friendsId) {
-            // Получаем пользователя по его идентификатору
             Optional<User> friend = getUser(friendId);
-            friend.ifPresent(result::add); // Добавляем пользователя в результат, если он существует
+            friend.ifPresent(result::add);
         }
-
         return result;
     }
 

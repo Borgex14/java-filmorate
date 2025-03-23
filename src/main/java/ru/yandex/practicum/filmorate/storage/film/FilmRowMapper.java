@@ -13,8 +13,6 @@ import ru.yandex.practicum.filmorate.storage.like.LikeDbStorage;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 
@@ -42,7 +40,6 @@ public class FilmRowMapper implements RowMapper<Film> {
             releaseDateString = rs.getString("release_date");
             log.info("Полученная строка даты: {}", releaseDateString);
 
-            // Преобразуем строку в LocalDate
             LocalDate releaseDate = LocalDate.parse(releaseDateString);
 
             return Film.builder()
