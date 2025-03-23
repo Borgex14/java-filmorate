@@ -8,6 +8,7 @@ import java.util.List;
 
 @Service
 public class GenreService {
+
     private final GenreStorage genreStorage;
 
     public GenreService(GenreStorage genreStorage) {
