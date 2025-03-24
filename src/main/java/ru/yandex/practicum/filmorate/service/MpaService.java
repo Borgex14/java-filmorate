@@ -12,17 +12,22 @@ public class MpaService {
     private final MpaStorage mpaDbStorage;
 
     public MpaService(MpaStorage mpaDbStorage, NamedParameterJdbcOperations jdbcOperations) {
+
         this.mpaDbStorage = mpaDbStorage;
     }
 
     public List<Mpa> getAllRatings() {
+
         return mpaDbStorage.getAllRatings();
     }
 
     public Mpa getRatingById(int id) {
+
         return mpaDbStorage.getRatingById(id);
     }
 
-    public Mpa getNameById(Long id) { return mpaDbStorage.getNameById(id);
+    public Mpa getNameById(Long id) {
+
+        return mpaDbStorage.getNameById(id);
     }
 }
