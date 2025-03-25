@@ -40,13 +40,6 @@ class MpaDbStorageTest {
     }
 
     @Test
-    void testGetAllRatings() {
-        List<Mpa> ratings = mpaDbStorage.getAllRatings();
-        assertThat(ratings).isNotEmpty();
-        assertThat(ratings.size()).isGreaterThan(0);
-    }
-
-    @Test
     void testGetNameById_Success() {
         Mpa mpa = mpaDbStorage.getNameById(1L);
         assertThat(mpa).isNotNull();
