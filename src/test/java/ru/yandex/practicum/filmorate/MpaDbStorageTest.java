@@ -14,6 +14,8 @@ import ru.yandex.practicum.filmorate.model.Mpa;
 import ru.yandex.practicum.filmorate.storage.mpa.MpaDbStorage;
 import ru.yandex.practicum.filmorate.storage.mpa.MpaRowMapper;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -31,10 +33,11 @@ class MpaDbStorageTest {
         mpaDbStorage = new MpaDbStorage(jdbcTemplate, null, new MpaRowMapper());
     }
 
-    @BeforeEach
-    @Sql(scripts = "/test-schema.sql")
-    @Sql(scripts = "/test-data.sql")
-    void init() {
+    @Test
+    void testGetAllRatings() {
+        List<Mpa> ratings = mpaDbStorage.getAllRatings();
+        assertThat(ratings).isNotEmpty();
+        assertThat(ratings.size()).isGreaterThan(0);
     }
 
     @Test
