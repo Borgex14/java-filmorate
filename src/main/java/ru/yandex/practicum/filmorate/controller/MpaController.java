@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RestController;
 import ru.yandex.practicum.filmorate.model.Mpa;
 import ru.yandex.practicum.filmorate.service.MpaService;
 
-import java.util.List;
+import java.util.Collection;
 
 @RestController
 @RequestMapping("/mpa")
@@ -22,8 +22,8 @@ public class MpaController {
     }
 
     @GetMapping
-    public List<Mpa> getAllRatings() {
-        log.info("Получен запрос на получение всех жанров.");
+    public Collection<Mpa> getAllRatings() {
+        log.info("Получен запрос на получение всех рейтингов.");
         return mpaService.getAllRatings();
     }
 

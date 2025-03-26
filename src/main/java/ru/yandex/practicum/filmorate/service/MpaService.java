@@ -5,7 +5,7 @@ import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.model.Mpa;
 import ru.yandex.practicum.filmorate.storage.mpa.MpaStorage;
 
-import java.util.List;
+import java.util.Collection;
 
 @Service
 public class MpaService {
@@ -16,7 +16,7 @@ public class MpaService {
         this.mpaDbStorage = mpaDbStorage;
     }
 
-    public List<Mpa> getAllRatings() {
+    public Collection<Mpa> getAllRatings() {
 
         return mpaDbStorage.getAllRatings();
     }

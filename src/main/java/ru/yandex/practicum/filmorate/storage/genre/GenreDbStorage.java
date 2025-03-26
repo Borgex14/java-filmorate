@@ -40,7 +40,7 @@ public class GenreDbStorage implements GenreStorage {
         }
     }
 
-    public List<Genre> getAllGenres() {
+    public Collection<Genre> getAllGenres() {
         String sql = "SELECT id, name FROM genres";
 
         return jdbcTemplate.query(sql, (rs, rowNum) -> {

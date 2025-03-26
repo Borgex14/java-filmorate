@@ -13,7 +13,7 @@ import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Mpa;
 
-import java.util.List;
+import java.util.Collection;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -43,7 +43,7 @@ public class MpaDbStorage implements MpaStorage {
     }
 
     @Override
-    public List<Mpa> getAllRatings() {
+    public Collection<Mpa> getAllRatings() {
         String sqlQuery = "SELECT * from rating";
         return jdbcTemplate.query(sqlQuery, mpaRowMapper::mapRow);
     }

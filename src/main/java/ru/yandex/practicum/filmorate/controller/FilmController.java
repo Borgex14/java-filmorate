@@ -12,6 +12,9 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 import java.util.List;
+
+import ru.yandex.practicum.filmorate.exception.ErrorResponse;
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.service.FilmService;
@@ -26,10 +29,24 @@ public class FilmController {
     private final FilmService filmService;
 
     @PostMapping
-    public ResponseEntity<Film> addFilm(@Valid @RequestBody Film film) {
-        Film addedFilm = filmService.addFilm(film);
-        log.info("Добавлен новый фильм: {}", addedFilm);
-        return ResponseEntity.ok(addedFilm);
+    public ResponseEntity<?> addFilm(@Valid @RequestBody Film film) {
+        log.info("Получен запрос на добавление фильма: {}", film);
+        try {
+            Film addedFilm = filmService.addFilm(film);
+            log.info("Добавлен новый фильм: {}", addedFilm);
+            return ResponseEntity.ok(addedFilm);
+        } catch (NotFoundException ex) {
+            log.error("Ошибка при добавлении фильма: {}", ex.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Collections.singletonMap("error", ex.getMessage()));
+        } catch (ValidationException ex) {
+            log.error("Ошибка валидации: {}", ex.getMessage());
+            return ResponseEntity.badRequest().body(Collections.singletonMap("error", ex.getMessage()));
+        } catch (Exception ex) {
+            log.error("Неизвестная ошибка: {}", ex.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Collections.singletonMap("error", ex.getMessage()));
+        }
     }
 
     @PutMapping
