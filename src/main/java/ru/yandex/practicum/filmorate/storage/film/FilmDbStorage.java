@@ -4,6 +4,7 @@ import java.sql.PreparedStatement;
 import java.sql.Date;
 import java.time.LocalDate;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.Mpa;
 import ru.yandex.practicum.filmorate.storage.filmGenre.FilmGenreStorage;
 import ru.yandex.practicum.filmorate.storage.genre.GenreStorage;
+import ru.yandex.practicum.filmorate.storage.like.LikeDbStorage;
 import ru.yandex.practicum.filmorate.storage.mpa.MpaStorage;
 
 
@@ -37,6 +39,7 @@ public class FilmDbStorage implements FilmStorage {
     private final GenreStorage genreStorage;
     private final FilmGenreStorage filmGenreStorage;
     private final MpaStorage mpaStorage;
+    private final LikeDbStorage likeStorage;
 
     @Override
     public Film addFilm(Film film) {
@@ -53,20 +56,12 @@ public class FilmDbStorage implements FilmStorage {
 
         log.info("Добавление нового фильма: {}", film.getName());
 
-        Mpa mpa = mpaStorage.getNameById(Long.valueOf(film.getMpa().getId()));
+        Mpa mpa = mpaStorage.getRatingById(film.getMpa().getId());
         if (mpa == null) {
             throw new NotFoundException("MPA не найдено с ID: " + film.getMpa().getId());
         }
 
         film.setMpa(mpa);
-
-        List<Genre> genres = film.getGenres() != null ? film.getGenres() : new ArrayList<>();
-        List<Genre> selectedGenres = genres.stream()
-                .map(genre -> genreStorage.getGenreById(genre.getId()))
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
-
-        film.setGenres(selectedGenres);
 
         jdbcTemplate.update(connection -> {
             PreparedStatement stmt = connection.prepareStatement(sqlQueryFilm, new String[]{"id"});
@@ -82,7 +77,14 @@ public class FilmDbStorage implements FilmStorage {
                 .map(Number::longValue)
                 .orElseThrow(() -> new ValidationException("Ошибка добавления фильма в таблицу"));
 
-        filmGenreStorage.addGenresInFilmGenres(film, filmId);
+        List<Genre> genres = film.getGenres() != null ? film.getGenres() : new ArrayList<>();
+        List<Genre> selectedGenres = genres.stream()
+                .map(genre -> genreStorage.getGenreById(genre.getId()))
+                .filter(Objects::nonNull)
+                .toList();
+            filmGenreStorage.addGenresInFilmGenres(film, filmId);
+
+            film.setGenres(selectedGenres);
 
         log.info("Возвращаемый фильм: id={}, name={}, description={}, releaseDate={}, duration={}, mpa={}, genres={}",
                 filmId,
@@ -136,7 +138,7 @@ public class FilmDbStorage implements FilmStorage {
             throw new NotFoundException("Ошибка обновления: фильм с id = " + film.getId() + " не найден");
         }
 
-        Mpa mpa = mpaStorage.getNameById(Long.valueOf(film.getMpa().getId()));
+        Mpa mpa = mpaStorage.getRatingById(film.getMpa().getId());
         if (mpa == null) {
             throw new NotFoundException("MPA с id = " + film.getMpa().getId() + " не найден");
         }
@@ -165,14 +167,22 @@ public class FilmDbStorage implements FilmStorage {
                 "JOIN rating r ON f.rating_id = r.id " +
                 "WHERE f.id = ?";
 
-        Optional<Film> resultFilm = Optional.ofNullable(jdbcTemplate.queryForObject(sqlQuery,
-                filmRowMapper::mapRow, id));
+        Film film = jdbcTemplate.queryForObject(sqlQuery, filmRowMapper::mapRow, id);
 
-        if (resultFilm.isPresent()) {
-            return resultFilm.get();
+        if (film != null) {
+            Map<Long, Set<Genre>> filmGenresMap = filmGenreStorage.getGenresByFilmIds(List.of(film.getId()));
+            film.setGenres((List<Genre>) filmGenresMap.getOrDefault(film.getId(), new HashSet<>()));
+
+            Mpa mpa = mpaStorage.getRatingById(film.getMpa().getId());
+            film.setMpa(mpa);
+
+            Long likes = likeStorage.getLikesById(film.getId());
+            film.setLikes(likes);
         } else {
             throw new NotFoundException("Фильм с id = " + id + " не найден");
         }
+
+        return film;
     }
 
     @Override
@@ -180,6 +190,20 @@ public class FilmDbStorage implements FilmStorage {
         log.info("Получение всех фильмов");
         final String sqlQuery = "SELECT id, name, description, release_date, duration, rating_id FROM films";
         List<Film> films = jdbcTemplate.query(sqlQuery, filmRowMapper::mapRow);
+
+        List<Long> filmIds = films.stream().map(Film::getId).collect(Collectors.toList());
+        Map<Long, Set<Genre>> filmGenresMap = filmGenreStorage.getGenresByFilmIds(filmIds);
+
+        films.forEach(film -> film.setGenres((List<Genre>) filmGenresMap.getOrDefault(film.getId(), new HashSet<>())));
+
+        List<Integer> mpaIds = films.stream().map(film -> film.getMpa().getId()).distinct().collect(Collectors.toList());
+        Map<Integer, Mpa> mpaMap = mpaStorage.getListRatingById(mpaIds).stream()
+                .collect(Collectors.toMap(Mpa::getId, Function.identity()));
+
+        films.forEach(film -> film.setMpa(mpaMap.get(film.getMpa().getId())));
+
+        Map<Long, Long> likesMap = likeStorage.getListOfLikesById(filmIds);
+        films.forEach(film -> film.setLikes(likesMap.getOrDefault(film.getId(), 0L)));
         log.info("Полученные фильмы: {}", films);
         return films;
     }

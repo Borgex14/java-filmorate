@@ -25,9 +25,4 @@ public class MpaService {
 
         return mpaDbStorage.getRatingById(id);
     }
-
-    public Mpa getNameById(Long id) {
-
-        return mpaDbStorage.getNameById(id);
-    }
 }

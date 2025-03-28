@@ -5,6 +5,7 @@ import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.storage.genre.GenreStorage;
 
 import java.util.Collection;
+import java.util.List;
 
 @Service
 public class GenreService {
@@ -16,7 +17,7 @@ public class GenreService {
         this.genreStorage = genreStorage;
     }
 
-    public Genre getGenreById(int id) {
+    public Genre getGenreById(Long id) {
 
         return genreStorage.getGenreById(id);
     }

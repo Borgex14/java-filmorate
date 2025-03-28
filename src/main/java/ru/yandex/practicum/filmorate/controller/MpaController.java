@@ -28,7 +28,7 @@ public class MpaController {
     }
 
     @GetMapping("/{id}")
-    public Mpa getNameById(@PathVariable Long id) {
-        return mpaService.getNameById(id);
+    public Mpa getNameById(@PathVariable int id) {
+        return mpaService.getRatingById(id);
     }
 }

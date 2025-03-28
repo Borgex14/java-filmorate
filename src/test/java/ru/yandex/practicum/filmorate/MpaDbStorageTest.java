@@ -41,7 +41,7 @@ class MpaDbStorageTest {
 
     @Test
     void testGetNameById_Success() {
-        Mpa mpa = mpaDbStorage.getNameById(1L);
+        Mpa mpa = mpaDbStorage.getRatingById(1);
         assertThat(mpa).isNotNull();
         assertThat(mpa.getId()).isEqualTo(1);
         assertThat(mpa.getName()).isEqualTo("G");
@@ -49,7 +49,7 @@ class MpaDbStorageTest {
 
     @Test
     void testGetNameById_NotFound() {
-        assertThatThrownBy(() -> mpaDbStorage.getNameById(999L))
+        assertThatThrownBy(() -> mpaDbStorage.getRatingById(999))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessageContaining("Mpa с id = 999 не найден");
     }

@@ -2,8 +2,11 @@ package ru.yandex.practicum.filmorate.storage.filmGenre;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
@@ -12,9 +15,7 @@ import ru.yandex.practicum.filmorate.storage.genre.GenreStorage;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 
 @Slf4j
 @Component
@@ -24,6 +25,34 @@ public class FilmGenreDbStorage implements FilmGenreStorage {
     private final JdbcTemplate jdbcTemplate;
     private final GenreStorage genreStorage;
     private final GenreRowMapper genreRowMapper;
+    @Autowired
+    private NamedParameterJdbcTemplate namedParameterJdbcTemplate;
+
+    @Override
+    public Map<Long, Set<Genre>> getGenresByFilmIds(List<Long> filmIds) {
+        final String sqlQuery = "SELECT film_id, genre_id FROM film_genres WHERE film_id IN (:filmIds)";
+
+        MapSqlParameterSource parameters = new MapSqlParameterSource();
+        parameters.addValue("filmIds", filmIds);
+
+        List<Map<String, Object>> results = namedParameterJdbcTemplate.queryForList(sqlQuery, parameters);
+
+        Map<Long, Set<Genre>> genresMap = new HashMap<>();
+
+        for (Map<String, Object> row : results) {
+            Long filmId = ((Number) row.get("film_id")).longValue();
+            Long genreId = ((Number) row.get("genre_id")).longValue();
+
+            // Получаем или создаем множество жанров для данного фильма
+            Set<Genre> genres = genresMap.computeIfAbsent(filmId, k -> new HashSet<>());
+
+            // Здесь вы должны создать объект Genre на основе genreId
+            Genre genre = new Genre(genreId); // Предполагается, что у вас есть конструктор Genre, который принимает genreId
+            genres.add(genre);
+        }
+
+        return genresMap;
+    }
 
     @Override
     public Collection<Genre> findAll() {
@@ -37,7 +66,7 @@ public class FilmGenreDbStorage implements FilmGenreStorage {
 
         if (resultGenres.isEmpty()) {
             log.warn("Нет жанров для добавления в film_genres");
-            return; // Возвращаемся, если нет жанров для добавления
+            return;
         }
 
         final String sqlQueryFilmGenres = "INSERT INTO film_genres(film_id, genre_id) VALUES (?, ?)";

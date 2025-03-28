@@ -26,7 +26,7 @@ public class GenreDbStorage implements GenreStorage {
     private final JdbcTemplate jdbcTemplate;
 
     @Override
-    public Genre getGenreById(long id) {
+    public Genre getGenreById(Long id) {
 
         String getGenreQuery = "SELECT id, name AS cnt FROM genres WHERE id = :id";
 

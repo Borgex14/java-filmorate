@@ -29,11 +29,6 @@ public class FilmRowMapper implements RowMapper<Film> {
     @Override
     public Film mapRow(ResultSet rs, int rowNum) throws SQLException {
         log.info("Старт метода Film mapRowToFilm(ResultSet rs, int rowNum)");
-        int mpaId = rs.getInt("rating_id");
-        Mpa mpa = mpaStorage.getRatingById(mpaId);
-        List<Genre> result = filmGenreStorage.getListGenreFromDbGenres(rs.getLong("id"));
-        log.info("Получаем количество лайков фильма по id = {}", rs.getLong("id"));
-        Long likes = likeStorage.getLikesById(rs.getLong("id"));
 
         String releaseDateString = null;
         try {
@@ -44,13 +39,10 @@ public class FilmRowMapper implements RowMapper<Film> {
 
             return Film.builder()
                     .id(rs.getLong("id"))
-                    .likes(likes)
                     .name(rs.getString("name"))
                     .description(rs.getString("description"))
                     .releaseDate(releaseDate)
                     .duration(rs.getInt("duration"))
-                    .mpa(mpa)
-                    .genres(result)
                     .build();
         } catch (DateTimeParseException e) {
             log.error("Ошибка при парсинге даты: {}", e.getMessage());

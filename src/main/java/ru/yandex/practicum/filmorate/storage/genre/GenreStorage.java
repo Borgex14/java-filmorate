@@ -7,7 +7,7 @@ import java.util.Collection;
 
 public interface GenreStorage {
 
-    Genre getGenreById(long id);
+    Genre getGenreById(Long id);
 
     Collection<Genre> getAllGenres();
 

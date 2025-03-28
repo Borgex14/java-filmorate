@@ -2,21 +2,20 @@ package ru.yandex.practicum.filmorate.storage.mpa;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Mpa;
 
-import java.util.Collection;
-import java.util.Objects;
-import java.util.Optional;
-
+import java.util.*;
 
 
 @Slf4j
@@ -27,6 +26,8 @@ public class MpaDbStorage implements MpaStorage {
     private final JdbcTemplate jdbcTemplate;
     private final NamedParameterJdbcOperations jdbcOperations;
     private final MpaRowMapper mpaRowMapper;
+    @Autowired
+    private NamedParameterJdbcTemplate namedParameterJdbcTemplate;
 
     @Override
     public Mpa getRatingById(int id) {
@@ -49,30 +50,6 @@ public class MpaDbStorage implements MpaStorage {
     }
 
     @Override
-    public Mpa getNameById(Long id) {
-        log.info("Поиск MPA по id: {}", id);
-        String sqlQuery = "SELECT * " +
-                "FROM rating where id = ?";
-
-        Optional<Mpa> resultMpa;
-
-        try {
-            resultMpa = Optional.ofNullable(jdbcTemplate.queryForObject(sqlQuery,
-                    mpaRowMapper::mapRow, id));
-        } catch (EmptyResultDataAccessException e) {
-            resultMpa = Optional.empty();
-        }
-
-        if (resultMpa.isPresent()) {
-            return resultMpa.get();
-
-        } else {
-            log.error("Mpa с id = {} не найден", id);
-            throw new NotFoundException("Mpa с id = " + id + " не найден");
-        }
-    }
-
-    @Override
     public Integer getCountById(Film film) {
         log.info("Проверка существования mpa_id = {} в таблице rating", film.getMpa().getId());
         Integer count;
@@ -90,5 +67,17 @@ public class MpaDbStorage implements MpaStorage {
         }
 
         return count;
+    }
+
+    @Override
+    public List<Mpa> getListRatingById(List<Integer> mpaIds) {
+        final String getRatingQuery = "SELECT id, name FROM rating WHERE id IN (:ids)";
+
+        MapSqlParameterSource parameters = new MapSqlParameterSource();
+        parameters.addValue("ids", mpaIds);
+
+        return namedParameterJdbcTemplate.query(getRatingQuery, parameters, (rs, rowNum) ->
+                new Mpa(rs.getInt("id"), rs.getString("name"))
+        );
     }
 }
