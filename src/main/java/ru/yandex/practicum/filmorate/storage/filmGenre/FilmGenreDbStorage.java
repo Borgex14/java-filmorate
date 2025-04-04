@@ -30,7 +30,8 @@ public class FilmGenreDbStorage implements FilmGenreStorage {
 
     @Override
     public Map<Long, Set<Genre>> getGenresByFilmIds(List<Long> filmIds) {
-        final String sqlQuery = "SELECT film_id, genre_id FROM film_genres WHERE film_id IN (:filmIds)";
+        final String sqlQuery = "SELECT fg.film_id, fg.genre_id, g.name FROM film_genres fg " +
+                "JOIN genres g ON fg.genre_id = g.id WHERE fg.film_id IN (:filmIds)";
 
         MapSqlParameterSource parameters = new MapSqlParameterSource();
         parameters.addValue("filmIds", filmIds);
@@ -42,12 +43,13 @@ public class FilmGenreDbStorage implements FilmGenreStorage {
         for (Map<String, Object> row : results) {
             Long filmId = ((Number) row.get("film_id")).longValue();
             Long genreId = ((Number) row.get("genre_id")).longValue();
+            String genreName = (String) row.get("name"); // Получаем имя жанра
 
             // Получаем или создаем множество жанров для данного фильма
             Set<Genre> genres = genresMap.computeIfAbsent(filmId, k -> new HashSet<>());
 
-            // Здесь вы должны создать объект Genre на основе genreId
-            Genre genre = new Genre(genreId); // Предполагается, что у вас есть конструктор Genre, который принимает genreId
+            // Создаем объект Genre на основе genreId и genreName
+            Genre genre = new Genre(genreId, genreName); // Предполагается наличие конструктора Genre с genreId и name
             genres.add(genre);
         }
 

@@ -71,7 +71,7 @@ public class FilmController {
 
     @GetMapping("/{id}")
     public ResponseEntity<?> getFilmById(@PathVariable long id) {
-        Film film = filmService.getFilmById(id);
+        Film film = filmService.getFilmById(Collections.singletonList(id));
             log.info("Получен фильм с id {}: {}", id, film);
             return ResponseEntity.ok(film);
     }

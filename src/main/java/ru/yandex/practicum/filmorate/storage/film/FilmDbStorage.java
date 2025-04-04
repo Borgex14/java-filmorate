@@ -14,6 +14,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Component;
@@ -40,6 +41,7 @@ public class FilmDbStorage implements FilmStorage {
     private final FilmGenreStorage filmGenreStorage;
     private final MpaStorage mpaStorage;
     private final LikeDbStorage likeStorage;
+    private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
 
     @Override
     public Film addFilm(Film film) {
@@ -161,29 +163,52 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     @Override
-    public Film getFilm(long id) {
-        log.info("Поиск фильма по id = {}", id);
-
-        final String sqlQuery = "SELECT f.id, f.name, f.description, f.release_date, f.duration, f.rating_id, r.name as mpa_name " +
-                "FROM films f " +
-                "JOIN rating r ON f.rating_id = r.id " +
-                "WHERE f.id = ?";
-
-        Film film = jdbcTemplate.queryForObject(sqlQuery, filmRowMapper::mapRow, id);
-
-        if (film != null) {
-            Map<Long, Set<Genre>> filmGenresMap = filmGenreStorage.getGenresByFilmIds(List.of(film.getId()));
-            film.setGenres(new ArrayList<>(filmGenresMap.getOrDefault(film.getId(), new HashSet<>()))); // Исправлено
-
-            Mpa mpa = mpaStorage.getRatingById(film.getMpa().getId());
-            film.setMpa(mpa);
-
-            Long likes = likeStorage.getLikesById(film.getId());
-            film.setLikes(likes);
-        } else {
-            throw new NotFoundException("Фильм с id = " + id + " не найден");
+    public List<Film> getFilms(List<Long> filmIds) {
+        // Получаем все жанры
+        Map<Long, Set<Genre>> filmGenresMap = filmGenreStorage.getGenresByFilmIds(filmIds);
+        System.out.println("Film Genres Map: " + filmGenresMap);
+        // Получаем все рейтинги
+        Map<Integer, Mpa> mpaMap;
+        try {
+            List<Mpa> mpaList = mpaStorage.getAllRatings();
+            mpaMap = mpaList.stream()
+                    .collect(Collectors.toMap(Mpa::getId, Function.identity()));
+        } catch (Exception e) {
+            throw new RuntimeException("Ошибка при получении рейтингов: " + e.getMessage());
         }
-        return film;
+
+        // Получаем лайки
+        Map<Long, Long> likesMap = likeStorage.getListOfLikesById(filmIds);
+
+        // Запрос на получение фильмов
+        String sqlQuery = "SELECT f.id, f.name, f.description, f.release_date, f.duration, f.rating_id " +
+                "FROM films f WHERE f.id IN (:filmIds)";
+
+        MapSqlParameterSource parameters = new MapSqlParameterSource();
+        parameters.addValue("filmIds", filmIds);
+
+        try {
+            List<Film> films = namedParameterJdbcTemplate.query(sqlQuery, parameters,
+                    (rs, rowNum) -> Film.builder()
+                            .id(rs.getLong("id"))
+                            .name(rs.getString("name"))
+                            .description(rs.getString("description"))
+                            .releaseDate(LocalDate.parse(rs.getString("release_date")))
+                            .duration(rs.getInt("duration"))
+                            .mpa(mpaMap.get(rs.getInt("rating_id")))
+                            .likes(likesMap.getOrDefault(rs.getLong("id"), 0L))
+                            .genres(new ArrayList<>(filmGenresMap.getOrDefault(rs.getLong("id"), new HashSet<>())))
+                            .build());
+
+            if (films.isEmpty()) {
+                throw new RuntimeException("Фильмы не найдены для указанных идентификаторов: " + filmIds);
+            }
+
+            return films;
+        } catch (Exception e) {
+            e.printStackTrace(); // Логируем стек вызовов
+            throw new RuntimeException("Ошибка при получении фильмов: " + e.getMessage(), e);
+        }
     }
 
     @Override
@@ -281,7 +306,7 @@ public class FilmDbStorage implements FilmStorage {
             throw new ValidationException("Количество фильмов должно быть больше нуля");
         }
 
-        String countQuery = "SELECT COUNT(film_id) AS amount_likes, film_id FROM likes " +
+        String countQuery = "SELECT COUNT(id) AS amount_likes, film_id FROM likes " +
                 "GROUP BY film_id ORDER BY amount_likes DESC";
 
         log.info("Запрос к базе данных для получения популярных фильмов");
@@ -302,20 +327,10 @@ public class FilmDbStorage implements FilmStorage {
         }
 
         return resultMap.keySet().stream()
-                .map(this::getFilm)
-                .filter(Objects::nonNull) // Фильтруем null значения
-                .peek(film -> {
-                    if (film.getMpa() == null) {
-                        // Создаем новый объект Mpa с значениями по умолчанию
-                        film.setMpa(new Mpa(0, "Неизвестный")); // Или любое другое значение по умолчанию
-                    } else {
-                        // Если Mpa существует, убедитесь, что он корректный
-                        Mpa mpa = mpaStorage.getRatingById(film.getMpa().getId());
-                        film.setMpa(mpa != null ? mpa : new Mpa(0, "Неизвестный"));
-                    }
-                })
-                .limit(countInt)
-                .collect(Collectors.toList()); // Используем collect для получения списка
+                .limit(countInt) // Ограничиваем количество фильмов до countInt
+                .map(filmId -> getFilms(Collections.singletonList((long) filmId))) // Передаем список с одним идентификатором
+                .flatMap(List::stream) // Разворачиваем список списков в один поток
+                .collect(Collectors.toList());
     }
 
     private void checkId(String tableName, String columnName, long id) {

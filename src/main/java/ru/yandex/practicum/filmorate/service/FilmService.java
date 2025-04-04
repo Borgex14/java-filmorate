@@ -27,8 +27,12 @@ public class FilmService {
         filmStorage.removeLike(filmId, userId);
     }
 
-    public Film getFilmById(long id) {
-        return filmStorage.getFilm(id);
+    public Film getFilmById(List<Long> id) {
+        List<Film> films = filmStorage.getFilms(id);
+        if (films.isEmpty()) {
+            throw new RuntimeException("Фильм не найден для указанного идентификатора: " + id);
+        }
+        return films.get(0);
     }
 
     public Collection<Film> getAllFilms() {

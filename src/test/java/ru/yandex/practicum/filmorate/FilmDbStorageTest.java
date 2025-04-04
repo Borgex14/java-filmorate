@@ -11,6 +11,7 @@ import ru.yandex.practicum.filmorate.model.Mpa;
 import ru.yandex.practicum.filmorate.storage.film.FilmDbStorage;
 
 import java.time.LocalDate;
+import java.util.Collections;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -57,7 +58,7 @@ public class FilmDbStorageTest {
     @Test
     public void testGetFilm() {
         Film addedFilm = filmDbStorage.addFilm(testFilm);
-        Film retrievedFilm = filmDbStorage.getFilm(addedFilm.getId());
+        Film retrievedFilm = (Film) filmDbStorage.getFilms(Collections.singletonList(addedFilm.getId()));
 
         assertThat(retrievedFilm).isNotNull();
         assertThat(retrievedFilm.getId()).isEqualTo(addedFilm.getId());

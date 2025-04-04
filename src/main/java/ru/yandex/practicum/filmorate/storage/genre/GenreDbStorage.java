@@ -41,7 +41,7 @@ public class GenreDbStorage implements GenreStorage {
     }
 
     public Collection<Genre> getAllGenres() {
-        String sql = "SELECT id, name FROM genres LIMIT 6";
+        String sql = "SELECT id, name FROM genres";
 
         return jdbcTemplate.query(sql, (rs, rowNum) -> {
             long id = rs.getLong("id");

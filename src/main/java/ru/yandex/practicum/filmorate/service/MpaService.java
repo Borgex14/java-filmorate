@@ -6,6 +6,8 @@ import ru.yandex.practicum.filmorate.model.Mpa;
 import ru.yandex.practicum.filmorate.storage.mpa.MpaStorage;
 
 import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 
 @Service
 public class MpaService {
@@ -16,7 +18,7 @@ public class MpaService {
         this.mpaDbStorage = mpaDbStorage;
     }
 
-    public Collection<Mpa> getAllRatings() {
+    public List<Mpa> getAllRatings() {
 
         return mpaDbStorage.getAllRatings();
     }

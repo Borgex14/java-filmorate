@@ -14,6 +14,8 @@ import ru.yandex.practicum.filmorate.storage.mpa.MpaDbStorage;
 import ru.yandex.practicum.filmorate.storage.mpa.MpaRowMapper;
 
 import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -34,7 +36,7 @@ class MpaDbStorageTest {
 
     @Test
     void testGetAllRatings() {
-        Collection<Mpa> ratings = mpaDbStorage.getAllRatings();
+        List<Mpa> ratings = mpaDbStorage.getAllRatings();
         assertThat(ratings).isNotEmpty();
         assertThat(ratings.size()).isGreaterThan(0);
     }

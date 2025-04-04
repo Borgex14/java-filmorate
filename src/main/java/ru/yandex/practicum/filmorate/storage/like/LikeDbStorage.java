@@ -26,7 +26,7 @@ public final class LikeDbStorage implements LikeStorage {
     }
 
     @Override
-    public Map getListOfLikesById(List<Long> filmIds) {
+    public Map<Long, Long> getListOfLikesById(List<Long> filmIds) {
         final String filmLikesQuery = "SELECT film_id, COUNT(*) AS like_count FROM likes WHERE film_id IN (:filmIds) GROUP BY film_id";
 
         MapSqlParameterSource parameters = new MapSqlParameterSource();

@@ -44,8 +44,8 @@ public class MpaDbStorage implements MpaStorage {
     }
 
     @Override
-    public Collection<Mpa> getAllRatings() {
-        String sqlQuery = "SELECT * from rating LIMIT 5";
+    public List<Mpa> getAllRatings() {
+        String sqlQuery = "SELECT * from rating";
         return jdbcTemplate.query(sqlQuery, mpaRowMapper::mapRow);
     }
 
