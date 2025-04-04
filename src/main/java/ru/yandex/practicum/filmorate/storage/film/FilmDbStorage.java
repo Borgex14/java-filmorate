@@ -143,7 +143,9 @@ public class FilmDbStorage implements FilmStorage {
             throw new NotFoundException("MPA с id = " + film.getMpa().getId() + " не найден");
         }
 
-        List<Genre> genres = Collections.singletonList(genreStorage.getGenreById(film.getId()));
+        List<Genre> genres = film.getGenres().stream()
+                .map(genre -> genreStorage.getGenreById(genre.getId()))
+                .collect(Collectors.toList());
 
         log.info("Фильм с id = {} успешно обновлён", film.getId());
 
@@ -171,7 +173,7 @@ public class FilmDbStorage implements FilmStorage {
 
         if (film != null) {
             Map<Long, Set<Genre>> filmGenresMap = filmGenreStorage.getGenresByFilmIds(List.of(film.getId()));
-            film.setGenres((List<Genre>) filmGenresMap.getOrDefault(film.getId(), new HashSet<>()));
+            film.setGenres(new ArrayList<>(filmGenresMap.getOrDefault(film.getId(), new HashSet<>()))); // Исправлено
 
             Mpa mpa = mpaStorage.getRatingById(film.getMpa().getId());
             film.setMpa(mpa);
@@ -181,7 +183,6 @@ public class FilmDbStorage implements FilmStorage {
         } else {
             throw new NotFoundException("Фильм с id = " + id + " не найден");
         }
-
         return film;
     }
 
@@ -191,19 +192,35 @@ public class FilmDbStorage implements FilmStorage {
         final String sqlQuery = "SELECT id, name, description, release_date, duration, rating_id FROM films";
         List<Film> films = jdbcTemplate.query(sqlQuery, filmRowMapper::mapRow);
 
+        log.info("Количество фильмов после запроса: {}", films.size());
+        if (films.isEmpty()) {
+            log.warn("Список фильмов пуст!");
+            return films; // Возвращаем пустой список
+        }
+
         List<Long> filmIds = films.stream().map(Film::getId).collect(Collectors.toList());
         Map<Long, Set<Genre>> filmGenresMap = filmGenreStorage.getGenresByFilmIds(filmIds);
 
-        films.forEach(film -> film.setGenres((List<Genre>) filmGenresMap.getOrDefault(film.getId(), new HashSet<>())));
+        films.forEach(film -> film.setGenres(new ArrayList<>(filmGenresMap.getOrDefault(film.getId(), new HashSet<>()))));
 
-        List<Integer> mpaIds = films.stream().map(film -> film.getMpa().getId()).distinct().collect(Collectors.toList());
+        List<Integer> mpaIds = films.stream()
+                .filter(film -> film.getMpa() != null) // Фильтруем фильмы без MPA
+                .map(film -> film.getMpa().getId())
+                .distinct()
+                .collect(Collectors.toList());
+
         Map<Integer, Mpa> mpaMap = mpaStorage.getListRatingById(mpaIds).stream()
                 .collect(Collectors.toMap(Mpa::getId, Function.identity()));
 
-        films.forEach(film -> film.setMpa(mpaMap.get(film.getMpa().getId())));
+        films.forEach(film -> {
+            if (film.getMpa() != null) {
+                film.setMpa(mpaMap.get(film.getMpa().getId()));
+            }
+        });
 
         Map<Long, Long> likesMap = likeStorage.getListOfLikesById(filmIds);
         films.forEach(film -> film.setLikes(likesMap.getOrDefault(film.getId(), 0L)));
+
         log.info("Полученные фильмы: {}", films);
         return films;
     }
@@ -257,7 +274,7 @@ public class FilmDbStorage implements FilmStorage {
         try {
             countInt = Integer.parseInt(count);
         } catch (Exception e) {
-            throw  new ValidationException("Передано не число, а " + count);
+            throw new ValidationException("Передано не число, а " + count);
         }
 
         if (countInt <= 0) {
@@ -281,13 +298,24 @@ public class FilmDbStorage implements FilmStorage {
 
         if (resultMap.isEmpty()) {
             log.warn("Нет популярных фильмов, возвращается пустой список");
+            return Collections.emptyList(); // Возвращаем пустой список вместо null
         }
 
         return resultMap.keySet().stream()
                 .map(this::getFilm)
                 .filter(Objects::nonNull) // Фильтруем null значения
+                .peek(film -> {
+                    if (film.getMpa() == null) {
+                        // Создаем новый объект Mpa с значениями по умолчанию
+                        film.setMpa(new Mpa(0, "Неизвестный")); // Или любое другое значение по умолчанию
+                    } else {
+                        // Если Mpa существует, убедитесь, что он корректный
+                        Mpa mpa = mpaStorage.getRatingById(film.getMpa().getId());
+                        film.setMpa(mpa != null ? mpa : new Mpa(0, "Неизвестный"));
+                    }
+                })
                 .limit(countInt)
-                .toList();
+                .collect(Collectors.toList()); // Используем collect для получения списка
     }
 
     private void checkId(String tableName, String columnName, long id) {
