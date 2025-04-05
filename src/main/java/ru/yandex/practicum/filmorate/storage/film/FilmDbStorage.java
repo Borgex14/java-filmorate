@@ -164,10 +164,8 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public List<Film> getFilms(List<Long> filmIds) {
-        // Получаем все жанры
         Map<Long, Set<Genre>> filmGenresMap = filmGenreStorage.getGenresByFilmIds(filmIds);
         System.out.println("Film Genres Map: " + filmGenresMap);
-        // Получаем все рейтинги
         Map<Integer, Mpa> mpaMap;
         try {
             List<Mpa> mpaList = mpaStorage.getAllRatings();
@@ -177,10 +175,8 @@ public class FilmDbStorage implements FilmStorage {
             throw new RuntimeException("Ошибка при получении рейтингов: " + e.getMessage());
         }
 
-        // Получаем лайки
         Map<Long, Long> likesMap = likeStorage.getListOfLikesById(filmIds);
 
-        // Запрос на получение фильмов
         String sqlQuery = "SELECT f.id, f.name, f.description, f.release_date, f.duration, f.rating_id " +
                 "FROM films f WHERE f.id IN (:filmIds)";
 
@@ -206,7 +202,7 @@ public class FilmDbStorage implements FilmStorage {
 
             return films;
         } catch (Exception e) {
-            e.printStackTrace(); // Логируем стек вызовов
+            e.printStackTrace();
             throw new RuntimeException("Ошибка при получении фильмов: " + e.getMessage(), e);
         }
     }
@@ -220,7 +216,7 @@ public class FilmDbStorage implements FilmStorage {
         log.info("Количество фильмов после запроса: {}", films.size());
         if (films.isEmpty()) {
             log.warn("Список фильмов пуст!");
-            return films; // Возвращаем пустой список
+            return films;
         }
 
         List<Long> filmIds = films.stream().map(Film::getId).collect(Collectors.toList());
@@ -229,7 +225,7 @@ public class FilmDbStorage implements FilmStorage {
         films.forEach(film -> film.setGenres(new ArrayList<>(filmGenresMap.getOrDefault(film.getId(), new HashSet<>()))));
 
         List<Integer> mpaIds = films.stream()
-                .filter(film -> film.getMpa() != null) // Фильтруем фильмы без MPA
+                .filter(film -> film.getMpa() != null)
                 .map(film -> film.getMpa().getId())
                 .distinct()
                 .collect(Collectors.toList());
@@ -323,13 +319,13 @@ public class FilmDbStorage implements FilmStorage {
 
         if (resultMap.isEmpty()) {
             log.warn("Нет популярных фильмов, возвращается пустой список");
-            return Collections.emptyList(); // Возвращаем пустой список вместо null
+            return Collections.emptyList();
         }
 
         return resultMap.keySet().stream()
-                .limit(countInt) // Ограничиваем количество фильмов до countInt
-                .map(filmId -> getFilms(Collections.singletonList((long) filmId))) // Передаем список с одним идентификатором
-                .flatMap(List::stream) // Разворачиваем список списков в один поток
+                .limit(countInt)
+                .map(filmId -> getFilms(Collections.singletonList((long) filmId)))
+                .flatMap(List::stream)
                 .collect(Collectors.toList());
     }
 

@@ -43,13 +43,11 @@ public class FilmGenreDbStorage implements FilmGenreStorage {
         for (Map<String, Object> row : results) {
             Long filmId = ((Number) row.get("film_id")).longValue();
             Long genreId = ((Number) row.get("genre_id")).longValue();
-            String genreName = (String) row.get("name"); // Получаем имя жанра
+            String genreName = (String) row.get("name");
 
-            // Получаем или создаем множество жанров для данного фильма
             Set<Genre> genres = genresMap.computeIfAbsent(filmId, k -> new HashSet<>());
 
-            // Создаем объект Genre на основе genreId и genreName
-            Genre genre = new Genre(genreId, genreName); // Предполагается наличие конструктора Genre с genreId и name
+            Genre genre = new Genre(genreId, genreName);
             genres.add(genre);
         }
 

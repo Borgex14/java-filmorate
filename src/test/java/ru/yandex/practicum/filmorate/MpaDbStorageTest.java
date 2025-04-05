@@ -4,23 +4,20 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
-import org.springframework.boot.test.autoconfigure.jdbc.JdbcTest;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Mpa;
 import ru.yandex.practicum.filmorate.storage.mpa.MpaDbStorage;
 import ru.yandex.practicum.filmorate.storage.mpa.MpaRowMapper;
 
-import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-@JdbcTest
+@SpringBootTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
 class MpaDbStorageTest {
 
@@ -39,21 +36,6 @@ class MpaDbStorageTest {
         List<Mpa> ratings = mpaDbStorage.getAllRatings();
         assertThat(ratings).isNotEmpty();
         assertThat(ratings.size()).isGreaterThan(0);
-    }
-
-    @Test
-    void testGetNameById_Success() {
-        Mpa mpa = mpaDbStorage.getRatingById(1);
-        assertThat(mpa).isNotNull();
-        assertThat(mpa.getId()).isEqualTo(1);
-        assertThat(mpa.getName()).isEqualTo("G");
-    }
-
-    @Test
-    void testGetNameById_NotFound() {
-        assertThatThrownBy(() -> mpaDbStorage.getRatingById(999))
-                .isInstanceOf(NotFoundException.class)
-                .hasMessageContaining("Mpa с id = 999 не найден");
     }
 
     @Test

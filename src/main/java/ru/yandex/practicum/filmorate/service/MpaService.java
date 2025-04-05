@@ -4,10 +4,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.model.Mpa;
 import ru.yandex.practicum.filmorate.storage.mpa.MpaStorage;
-
-import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 
 @Service
 public class MpaService {

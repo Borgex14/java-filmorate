@@ -2,21 +2,19 @@ package ru.yandex.practicum.filmorate.storage.mpa;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Mpa;
 
-import java.util.*;
-
+import java.util.List;
+import java.util.Objects;
 
 @Slf4j
 @Component
@@ -26,8 +24,6 @@ public class MpaDbStorage implements MpaStorage {
     private final JdbcTemplate jdbcTemplate;
     private final NamedParameterJdbcOperations jdbcOperations;
     private final MpaRowMapper mpaRowMapper;
-    @Autowired
-    private NamedParameterJdbcTemplate namedParameterJdbcTemplate;
 
     @Override
     public Mpa getRatingById(int id) {
@@ -53,8 +49,7 @@ public class MpaDbStorage implements MpaStorage {
     public Integer getCountById(Film film) {
         log.info("Проверка существования mpa_id = {} в таблице rating", film.getMpa().getId());
         Integer count;
-        final String sqlQueryMpa = "SELECT COUNT(*) " +
-                "FROM rating WHERE id = ?";
+        final String sqlQueryMpa = "SELECT COUNT(*) FROM rating WHERE id = ?";
 
         try {
             count = jdbcTemplate.queryForObject(sqlQueryMpa, Integer.class, film.getMpa().getId());
@@ -76,7 +71,7 @@ public class MpaDbStorage implements MpaStorage {
         MapSqlParameterSource parameters = new MapSqlParameterSource();
         parameters.addValue("ids", mpaIds);
 
-        return namedParameterJdbcTemplate.query(getRatingQuery, parameters, (rs, rowNum) ->
+        return jdbcOperations.query(getRatingQuery, parameters, (rs, rowNum) ->
                 new Mpa(rs.getInt("id"), rs.getString("name"))
         );
     }
