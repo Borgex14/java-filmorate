@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 import java.util.List;
+
+import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.service.FilmService;
@@ -26,10 +28,24 @@ public class FilmController {
     private final FilmService filmService;
 
     @PostMapping
-    public ResponseEntity<Film> addFilm(@Valid @RequestBody Film film) {
-        Film addedFilm = filmService.addFilm(film);
-        log.info("Добавлен новый фильм: {}", addedFilm);
-        return ResponseEntity.ok(addedFilm);
+    public ResponseEntity<?> addFilm(@Valid @RequestBody Film film) {
+        log.info("Получен запрос на добавление фильма: {}", film);
+        try {
+            Film addedFilm = filmService.addFilm(film);
+            log.info("Добавлен новый фильм: {}", addedFilm);
+            return ResponseEntity.ok(addedFilm);
+        } catch (NotFoundException ex) {
+            log.error("Ошибка при добавлении фильма: {}", ex.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Collections.singletonMap("error", ex.getMessage()));
+        } catch (ValidationException ex) {
+            log.error("Ошибка валидации: {}", ex.getMessage());
+            return ResponseEntity.badRequest().body(Collections.singletonMap("error", ex.getMessage()));
+        } catch (Exception ex) {
+            log.error("Неизвестная ошибка: {}", ex.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Collections.singletonMap("error", ex.getMessage()));
+        }
     }
 
     @PutMapping
@@ -55,16 +71,15 @@ public class FilmController {
 
     @GetMapping("/{id}")
     public ResponseEntity<?> getFilmById(@PathVariable long id) {
-        Film film = filmService.getFilmById(id);
+        Film film = filmService.getFilmById(Collections.singletonList(id));
             log.info("Получен фильм с id {}: {}", id, film);
             return ResponseEntity.ok(film);
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteFilm(@PathVariable long id) {
-        filmService.deleteFilmById(id);
-        log.info("Удален фильм с id {}", id);
-        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    @DeleteMapping("/{filmId}/like/{userId}")
+    public void deleteLike(@PathVariable int filmId, @PathVariable int userId) {
+        log.info("Получен запрос на удаление лайка у фильма с id {} от пользователя с id {}.", filmId, userId);
+        filmService.removeLike(filmId, userId);
     }
 
     @PutMapping("/{id}/like/{userId}")
@@ -72,13 +87,8 @@ public class FilmController {
         filmService.addLike(id, userId);
     }
 
-    @DeleteMapping("/{id}/like/{userId}")
-    public void removeLike(@PathVariable Long id, @PathVariable Long userId) {
-        filmService.removeLike(id, userId);
-    }
-
     @GetMapping("/popular")
-    public List<Film> getTopFilms(@RequestParam(value = "count", defaultValue = "10") Integer count) {
+    public List<Film> getTopFilms(@RequestParam(value = "count", defaultValue = "10") String count) {
         return filmService.getTopFilms(count);
     }
 }

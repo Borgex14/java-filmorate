@@ -1,20 +1,19 @@
 package ru.yandex.practicum.filmorate.controller;
 
-import java.util.Collections;
-import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import ru.yandex.practicum.filmorate.mappers.UserMapper;
 
 import jakarta.validation.Valid;
 import java.util.List;
+import java.util.Optional;
+
+import ru.yandex.practicum.filmorate.dto.UserDto;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.service.UserService;
-import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 @RestController
 @RequestMapping("/users")
@@ -23,79 +22,78 @@ import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 public class UserController {
     private final UserService userService;
 
-    @Autowired
-    public UserController(UserStorage userStorage, UserService userService) {
+    public UserController(UserService userService) {
         this.userService = userService;
     }
 
     @PostMapping
-    public ResponseEntity<User> addUser(@Valid @RequestBody User user) {
-        User createdUser = userService.createUser(user);
-        log.info("Создан новый пользователь: {}", createdUser);
-        return ResponseEntity.ok(createdUser);
+    public UserDto postUser(@Valid @RequestBody UserDto userDto) {
+        log.info("Получен запрос на создание пользователя");
+        checkUserLogin(userDto);
+        return UserMapper.toUserDto((userService.createUser(userDto)));
     }
 
     @PutMapping
-    public ResponseEntity<?> updateUser(@Valid @RequestBody User updatedUser) {
-        try {
-            User user = userService.updateUser(updatedUser);
-            log.info("Обновлен пользователь с id {}: {}", user.getId(), user);
-            return ResponseEntity.ok(user);
-        } catch (ValidationException e) {
-            log.warn("Попытка обновления несуществующего пользователя: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Collections.singletonMap("error", e.getMessage()));
-        }
+    public UserDto putUser(@Valid @RequestBody UserDto userDto) {
+        log.info("Получен запрос на изменение пользователя.");
+        checkUserLogin(userDto);
+        userService.updateUser(userDto);
+            return userDto;
     }
 
     @GetMapping
-    public ResponseEntity<List<User>> getAllUsers() {
-        log.info("Запрошены все пользователи. Количество пользователей: {}", userService.getAllUsers().size());
-        List<User> userList = userService.getAllUsers();
-        return ResponseEntity.ok(userList);
+    public List<User> getAllUsers() {
+        log.info("Получен запрос на получение всех пользователей.");
+        return userService.getAllUsers();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getUserById(@PathVariable long id) {
-        User user = userService.getUser(id);
-        if (user != null) {
-            log.info("Получен пользователь с id {}: {}", id, user);
-            return ResponseEntity.ok(user);
-        } else {
-            log.warn("Пользователь с id {} не найден", id);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Collections.singletonMap("error", "Пользователь с id " + id + " не найден."));
-        }
+    public Optional<User> getUserById(@PathVariable Long id) {
+        log.info("Получен запрос на получение пользователя по id {}.", id);
+        return userService.getUser(id);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteUser(@PathVariable long id) {
+    public void deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
-        log.info("Удален пользователь с id {}", id);
-        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
-    }
-
-    @PutMapping("/{id}/friends/{friendId}")
-    public void addFriend(@PathVariable Long id, @PathVariable Long friendId) {
-        userService.addFriend(id, friendId);
+        log.info("Удален пользователь с id {} ", id);
     }
 
     @ResponseStatus(HttpStatus.OK)
-    @DeleteMapping("/{id}/friends/{friendId}")
-    public void removeFriend(@PathVariable Long id, @PathVariable Long friendId) {
-        userService.removeFriend(id, friendId);
+    @PutMapping("/{userId}/friends/{friendId}")
+    public void postFriend(@PathVariable Long userId, @PathVariable Long friendId) {
+        log.info("Получен запрос на добавление пользователя с id {} ", friendId);
+        userService.addFriend(userId, friendId);
+    }
+
+    @ResponseStatus(HttpStatus.OK)
+    @DeleteMapping("/{userId}/friends/{friendId}")
+    public void deleteFriend(@PathVariable Long userId, @PathVariable Long friendId) {
+        log.info("Получен запрос от пользователя с id {} на удаление из друзей пользователя с id {}.", userId, friendId);
+        userService.removeFriend(userId, friendId);
     }
 
     @ResponseStatus(HttpStatus.OK)
     @GetMapping("/{id}/friends")
     public List<User> getFriends(@PathVariable Long id) {
-        Optional<List<User>> friendsList = userService.getFriends(id);
-        return friendsList.orElse(Collections.emptyList());
+        log.info("Получен запрос на получение списка всех друзей пользователя с id {}.", id);
+        return userService.getFriends(id);
     }
 
     @GetMapping("/{id}/friends/common/{otherId}")
     public List<User> getCommonFriends(@PathVariable Long id, @PathVariable Long otherId) {
+        log.info("Получен запрос на получение списка общих друзей пользователей с id {} и id {}.", id, otherId);
         return userService.getCommonFriends(id,otherId);
+    }
+
+    private void checkUserLogin(UserDto userDto) {
+        if (userDto.getLogin().contains(" ")) {
+            log.warn("Логин пользователя {} содержит пробел.", userDto.getLogin());
+            throw new ValidationException("Логин не может содержат знак пробела.");
+        }
+        if (userDto.getName() == null) {
+            userDto.setName(userDto.getLogin());
+        }
     }
 }
 

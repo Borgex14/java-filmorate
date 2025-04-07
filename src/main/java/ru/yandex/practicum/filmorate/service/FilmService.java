@@ -1,6 +1,5 @@
 package ru.yandex.practicum.filmorate.service;
 
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -9,44 +8,31 @@ import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.storage.film.FilmStorage;
 
 import java.util.*;
-import ru.yandex.practicum.filmorate.storage.user.UserStorage;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class FilmService {
     private final FilmStorage filmStorage;
-    private final UserStorage userStorage;
 
     public Film addFilm(Film film) {
         return filmStorage.addFilm(film);
     }
 
     public void addLike(long filmId, long userId) {
-        userStorage.getUser(userId);
-        Film film = filmStorage.getFilm(filmId);
-        if (film.getLikes().add(userId)) {
-            log.info("Пользователь с id {} поставил лайк фильму с id {}", userId, filmId);
-        } else {
-            log.warn("Пользователь с id {} уже поставил лайк фильму с id {}", userId, filmId);
-        }
+        filmStorage.addLike(filmId, userId);
     }
 
     public void removeLike(long filmId, long userId) {
-        userStorage.getUser(userId);
-        if (filmStorage.getFilm(filmId).deleteLike(userId)) {
-            log.info("Пользователь с id {} убрал лайк у фильма с id {}", userId, filmId);
-        } else {
-            log.warn("У пользователя с id {} нет лайка у фильма с id {}", userId, filmId);
+        filmStorage.removeLike(filmId, userId);
+    }
+
+    public Film getFilmById(List<Long> id) {
+        List<Film> films = filmStorage.getFilms(id);
+        if (films.isEmpty()) {
+            throw new RuntimeException("Фильм не найден для указанного идентификатора: " + id);
         }
-    }
-
-    public void deleteFilmById(long id) {
-        filmStorage.deleteFilm(id);
-    }
-
-    public Film getFilmById(long id) {
-        return filmStorage.getFilm(id);
+        return films.get(0);
     }
 
     public Collection<Film> getAllFilms() {
@@ -57,10 +43,7 @@ public class FilmService {
         return filmStorage.updateFilm(film);
     }
 
-    public List<Film> getTopFilms(Integer count) {
-        return filmStorage.getAllFilms().stream()
-                .sorted((entry1, entry2) -> Long.compare(entry2.getLikes().size(), entry1.getLikes().size()))
-                .limit(count)
-                .collect(Collectors.toList());
+    public List<Film> getTopFilms(String count) {
+        return filmStorage.getTopFilms(count);
     }
 }

@@ -1,24 +1,24 @@
-package ru.yandex.practicum.filmorate.model;
+package ru.yandex.practicum.filmorate.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import jakarta.validation.constraints.Past;
-
-import java.time.LocalDate;
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@Data
+import java.time.LocalDate;
+
 @Builder
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class User {
-    public Long id;
+public class UserDto {
+    private long id;
+
     @NotBlank
     @NotNull(message = "Электронная почта не может быть пустой")
     @Email(message = "Электронная почта должна содержать символ @")

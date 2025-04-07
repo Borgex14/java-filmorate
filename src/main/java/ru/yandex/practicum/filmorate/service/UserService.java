@@ -1,16 +1,15 @@
 package ru.yandex.practicum.filmorate.service;
 
-import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import ru.yandex.practicum.filmorate.dto.UserDto;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.user.UserStorage;
+import ru.yandex.practicum.filmorate.mappers.UserMapper;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -22,45 +21,33 @@ public class UserService {
         this.userStorage = userStorage;
     }
 
-    public void addFriend(long userId, long friendId) {
-        User user = userStorage.getUser(userId);
-        User friend = userStorage.getUser(friendId);
-        user.getFriends().add(friendId);
-        friend.getFriends().add(userId);
+    public void addFriend(Long userId, Long friendId) {
+        userStorage.addFriend(userId, friendId);
         log.info("Пользователь с id {} теперь друг пользователя с id {}", userId, friendId);
     }
 
-    public void removeFriend(long userId, long friendId) {
-        User user = userStorage.getUser(userId);
-        User friend = userStorage.getUser(friendId);
-        user.getFriends().remove(friendId);
-        friend.getFriends().remove(userId);
+    public void removeFriend(Long userId, Long friendId) {
+        userStorage.removeFriend(userId, friendId);
         log.info("Пользователь с id {} больше не друг пользователя с id {}", userId, friendId);
     }
 
-    public List<User> getCommonFriends(long userId, long otherUserId) {
-        User user = userStorage.getUser(userId);
-        User otherUser = userStorage.getUser(otherUserId);
-        Set<Long> commonFriendsIds = new HashSet<>(user.getFriends());
-        commonFriendsIds.retainAll(otherUser.getFriends());
-        return commonFriendsIds.stream()
-                .map(userStorage::getUser)
-                .collect(Collectors.toList());
+    public List<User> getCommonFriends(Long id, Long otherId) {
+        return userStorage.getCommonFriends(id, otherId);
     }
 
-    public User createUser(User user) {
-        return userStorage.createUser(user);
+    public User createUser(UserDto userDto) {
+        return userStorage.createUser(UserMapper.toModel(userDto));
     }
 
-    public User updateUser(User user) {
-        return userStorage.updateUser(user);
+    public User updateUser(UserDto userDto) {
+        return userStorage.updateUser(UserMapper.toModel(userDto));
     }
 
     public List<User> getAllUsers() {
         return userStorage.getAllUsers();
     }
 
-    public User getUser(Long userId) {
+    public Optional<User> getUser(Long userId) {
         return userStorage.getUser(userId);
     }
 
@@ -68,7 +55,7 @@ public class UserService {
          userStorage.deleteUser(userId);
     }
 
-    public Optional<List<User>> getFriends(Long userId) {
-        return userStorage.getFriends(userId);
+    public List<User> getFriends(Long id) {
+        return userStorage.getFriends(id);
     }
 }
