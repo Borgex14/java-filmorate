@@ -207,7 +207,7 @@ Maven 3.6+
 База данных (H2/PostgreSQL)
 ### Шаги установки
 #### Клонирование репозитория
-git clone https://github.com/your-username/java-filmorate.git
+git clone https://github.com/Borgex14/java-filmorate.git
 cd java-filmorate
 #### Настройка базы данных
 Для H2 (встроенная база)
